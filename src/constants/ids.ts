@@ -25,6 +25,14 @@ export const ID = {
   invXmlFile: '03aa1b28-56c2-4671-98dc-e5d09debe846',
   invSyncStatus: 'e2a6af7e-6da6-4cab-8493-5c36dccc6446',
   invSyncError: '0e564c0a-5185-4b1e-85af-921ff0a63d82',
+  invDueDate: '4a1eab0b-58bd-4c9b-b0d4-fe08bc667e87',
+  invDueDateSource: '6826fcdf-cf8e-4305-bc4e-c6a730fdaed3',
+  invPaymentStatus: 'cc385cb3-a698-41d9-b084-55b52fe1fa96',
+  invPaidAt: 'a2be883c-eb05-4679-ba20-8caddd8ac6d2',
+  invPaidAmount: 'f11e4290-3628-4fe1-9be3-8b5991526d68',
+  invPaymentMethod: '647e4bdf-a067-47d0-bb3b-34b896fcac79',
+  invBankAccount: '69fdac1f-bdec-44a7-baa5-292ad632ecb1',
+  invKsefPaymentId: '00e83a5f-88ff-44e7-94a6-102c7e8ca933',
 
   lineInvoice: 'f524ee47-f461-427d-ad32-696ca1f68fca',
   lineDirection: '55ccab41-92c6-4701-964f-b00d4e26a854',
@@ -62,6 +70,7 @@ export const ID = {
   fnSyncCron: 'e34bb764-0155-4820-82fe-734e797ef86f',
   fnSyncNow: '9c089662-b2d6-4d0b-818a-980dc8323c21',
   fnRelinkCompany: '837d1f8a-2e6c-4876-b412-de9667a38bb1',
+  fnReprocessXml: 'e47da952-2b43-444e-be9e-36042643e68f',
 
   fcSyncCommand: 'a00503de-99a0-408b-993d-bd1725886bff',
   cmdSync: 'bd29b4c2-6dfa-4c5b-b7d2-ecd9d46f783a',
@@ -70,10 +79,12 @@ export const ID = {
   viewPurchases: 'e05d113d-d2a6-40ef-97ff-e30269f23cc1',
   viewCostLines: '8e0cf93b-6fc0-446a-ad87-d1522202afb0',
   viewRevenueLines: '8758f80c-6068-43f4-bdca-ec0291ffe15e',
+  viewToPay: '90c386af-e509-42af-a471-0ff2a1734d76',
 
   navFolder: '5365d09a-4cec-43cf-afc9-9d51d801d21c',
   navSales: '63841482-5913-45ee-86c1-ed6f235349e2',
   navPurchases: '8c968e9b-37f6-4c98-a6ca-da7a1b78a25a',
   navCostLines: '60c29b3e-2af3-40ec-99b5-df4c56d76e84',
   navRevenueLines: '80b74dd7-3463-4a3a-8084-426cac493961',
+  navToPay: '55c72298-0d46-4be4-99e4-4cfffa10ac65',
 } as const;

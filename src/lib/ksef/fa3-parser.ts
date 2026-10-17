@@ -1,6 +1,7 @@
 import { XMLParser } from 'fast-xml-parser';
 
 import { parseDecimal, toMicros } from 'src/lib/decimal';
+import { parsePayment, type ParsedPayment } from 'src/lib/ksef/fa3-payment';
 
 // Parser e-faktury FA(3) (schemat_FA(3)_v1-0E.xsd). Bierze tylko to, czego potrzebuje dodatek:
 // dane nagłówka, które nie występują w metadanych, oraz pozycje (FaWiersz).
@@ -31,6 +32,7 @@ export type ParsedInvoice = {
   correctedKsefNumbers: string[];
   headerExchangeRate: number | null;
   lines: ParsedLine[];
+  payment: ParsedPayment;
 };
 
 export class Fa3ParseError extends Error {
@@ -45,7 +47,8 @@ const parser = new XMLParser({
   removeNSPrefix: true,
   parseTagValue: false,
   trimValues: true,
-  isArray: (name) => name === 'FaWiersz' || name === 'DaneFaKorygowanej',
+  isArray: (name) =>
+    ['FaWiersz', 'DaneFaKorygowanej', 'TerminPlatnosci', 'ZaplataCzesciowa', 'RachunekBankowy'].includes(name),
 });
 
 const str = (value: unknown): string | null => {
@@ -173,5 +176,6 @@ export const parseFa3 = (xml: string): ParsedInvoice => {
       .filter((n): n is string => n !== null),
     headerExchangeRate: parseDecimal(str(fa.KursWalutyZ)),
     lines: raw.map((r) => r.line),
+    payment: parsePayment(fa.Platnosc),
   };
 };

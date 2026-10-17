@@ -2,12 +2,10 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { createKsefHttpClient } from 'src/lib/ksef/http';
 import type { KsefInvoiceMetadata } from 'src/lib/ksef/invoices';
-import type { InvoiceRecord, LineRecord } from 'src/lib/sync/mapping';
-import type { KvStore } from 'src/lib/sync/rate-budget';
 import { KV_KEYS, runSync, type SyncDeps } from 'src/lib/sync/run-sync';
-import type { InvoiceStore, InvoiceUpdate } from 'src/lib/sync/store';
 import { createFakeKsef, type FakeKsefOptions } from 'src/lib/__tests__/fake-ksef';
 import { fixture } from 'src/lib/__tests__/fixtures';
+import { createMemoryKv, createMemoryStore } from 'src/lib/__tests__/memory-store';
 
 const OUR_NIP = '5260250274';
 const NOW = new Date('2026-10-17T08:00:00Z');
@@ -56,54 +54,6 @@ const CORRECTION = meta({
   netAmount: -200,
   invoiceType: 'Kor',
 });
-
-type StoredInvoice = InvoiceRecord & InvoiceUpdate & { id: string };
-
-const createMemoryStore = () => {
-  const invoices: StoredInvoice[] = [];
-  const lines: LineRecord[] = [];
-  const companies = new Map([['7740001454', 'company-dostawca']]);
-  const store: InvoiceStore = {
-    findExistingKsefNumbers: async (nums) =>
-      new Set(invoices.filter((i) => nums.includes(i.ksefNumber)).map((i) => i.ksefNumber)),
-    createInvoices: async (records) => {
-      for (const r of records) {
-        if (invoices.some((i) => i.ksefNumber === r.ksefNumber)) throw new Error('duplicate ksefNumber');
-        invoices.push({ ...r, id: `inv-${invoices.length + 1}` });
-      }
-    },
-    findPendingInvoices: async (limit) =>
-      invoices
-        .filter((i) => i.syncStatus === 'PENDING')
-        .sort((a, b) => a.permanentStorageDate.localeCompare(b.permanentStorageDate))
-        .slice(0, limit)
-        .map((i) => ({ id: i.id, ksefNumber: i.ksefNumber, direction: i.direction, issueDate: i.issueDate, companyId: i.companyId })),
-    replaceLines: async (invoiceId, newLines) => {
-      for (let i = lines.length - 1; i >= 0; i--) if (lines[i].invoiceId === invoiceId) lines.splice(i, 1);
-      lines.push(...newLines);
-    },
-    updateInvoice: async (id, data) => {
-      Object.assign(invoices.find((i) => i.id === id)!, data);
-    },
-    findInvoiceIdByKsefNumber: async (n) => invoices.find((i) => i.ksefNumber === n)?.id ?? null,
-    findCompanyIdsByNip: async (nips) =>
-      new Map(nips.filter((n) => companies.has(n)).map((n) => [n, companies.get(n)!])),
-    linkCompanyByNip: async () => ({ invoices: 0, lines: 0 }),
-    uploadXml: async (_xml, filename) => ({ fileId: `file-${filename}`, label: filename }),
-  };
-  return { store, invoices, lines };
-};
-
-const createMemoryKv = () => {
-  const data = new Map<string, unknown>();
-  const kv: KvStore = {
-    get: async <T>(key: string) => (data.has(key) ? (structuredClone(data.get(key)) as T) : null),
-    set: async (key, value) => {
-      data.set(key, structuredClone(value));
-    },
-  };
-  return { kv, data };
-};
 
 const ksefOptions = (overrides: Partial<FakeKsefOptions> = {}): FakeKsefOptions => ({
   token: 'TOKEN',

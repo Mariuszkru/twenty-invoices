@@ -47,5 +47,14 @@
       <P_11>300.00</P_11>
       <P_12>23</P_12>
     </FaWiersz>
+    <Platnosc>
+      <TerminPlatnosci>
+        <Termin>2026-10-15</Termin>
+      </TerminPlatnosci>
+      <FormaPlatnosci>6</FormaPlatnosci>
+      <RachunekBankowy>
+        <NrRB>12102010260000123456789012</NrRB>
+      </RachunekBankowy>
+    </Platnosc>
   </Fa>
 </Faktura>

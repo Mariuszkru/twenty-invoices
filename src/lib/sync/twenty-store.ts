@@ -15,6 +15,17 @@ const chunks = <T>(items: T[], size = CHUNK): T[][] =>
 
 type Edges<T> = { edges: { node: T }[] };
 
+const PENDING_INVOICE_SELECTION = {
+  id: true,
+  ksefNumber: true,
+  direction: true,
+  issueDate: true,
+  permanentStorageDate: true,
+  companyId: true,
+  paymentStatus: true,
+  grossAmount: { amountMicros: true, currencyCode: true },
+} as const;
+
 // Klient generowany ze schematu workspace'u jest dostępny dopiero po `twenty dev`; tu wystarcza luźne typowanie.
 type LooseClient = { query: (q: unknown) => Promise<any>; mutation: (q: unknown) => Promise<any> };
 
@@ -55,12 +66,35 @@ export const createTwentyStore = (): InvoiceStore => {
             orderBy: [{ permanentStorageDate: 'AscNullsLast' }],
             first: limit,
           },
-          edges: {
-            node: { id: true, ksefNumber: true, direction: true, issueDate: true, companyId: true },
-          },
+          edges: { node: PENDING_INVOICE_SELECTION },
         },
       });
       return (result.ksefInvoices as Edges<PendingInvoice>).edges.map((e) => e.node);
+    },
+
+    listInvoicesWithXml: async (after, limit) => {
+      const result = await client.query({
+        ksefInvoices: {
+          __args: {
+            filter: { syncStatus: { eq: SYNC_STATUS.COMPLETE } },
+            orderBy: [{ permanentStorageDate: 'AscNullsLast' }],
+            first: limit,
+            ...(after ? { after } : {}),
+          },
+          edges: { node: { ...PENDING_INVOICE_SELECTION, xmlFile: { url: true } } },
+          pageInfo: { endCursor: true, hasNextPage: true },
+        },
+      });
+      const connection = result.ksefInvoices as Edges<
+        PendingInvoice & { xmlFile: { url: string | null }[] | null }
+      > & { pageInfo: { endCursor: string | null; hasNextPage: boolean } };
+      return {
+        invoices: connection.edges.map(({ node: { xmlFile, ...invoice } }) => ({
+          ...invoice,
+          xmlUrl: xmlFile?.[0]?.url ?? null,
+        })),
+        nextCursor: connection.pageInfo.hasNextPage ? connection.pageInfo.endCursor : null,
+      };
     },
 
     replaceLines: async (invoiceId, lines) => {

@@ -1,4 +1,4 @@
-import { DIRECTION, SYNC_STATUS, type Direction } from 'src/constants/options';
+import { DIRECTION, PAYMENT_STATUS, SYNC_STATUS, type Direction } from 'src/constants/options';
 import { convertMicros, toMicros } from 'src/lib/decimal';
 import type { ParsedLine } from 'src/lib/ksef/fa3-parser';
 import type { KsefInvoiceMetadata } from 'src/lib/ksef/invoices';
@@ -47,6 +47,7 @@ export const invoiceFromMetadata = (
     counterpartyName: counterparty.name,
     companyId,
     syncStatus: SYNC_STATUS.PENDING,
+    paymentStatus: PAYMENT_STATUS.UNPAID as string,
   };
 };
 

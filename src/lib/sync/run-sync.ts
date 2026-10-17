@@ -1,14 +1,14 @@
 import { DIRECTION, SYNC_STATUS, type Direction } from 'src/constants/options';
-import { sumMicros } from 'src/lib/decimal';
-import { obtainAccessToken, type SessionStore } from 'src/lib/ksef/session';
-import { Fa3ParseError, parseFa3 } from 'src/lib/ksef/fa3-parser';
+import { Fa3ParseError } from 'src/lib/ksef/fa3-parser';
 import { KsefApiError, KsefRateLimitError, type KsefHttpClient } from 'src/lib/ksef/http';
 import {
   downloadInvoiceXml,
   fetchMetadataSince,
   type SubjectType,
 } from 'src/lib/ksef/invoices';
-import { invoiceFromMetadata, lineNetPln, lineRecord } from 'src/lib/sync/mapping';
+import { obtainAccessToken, type SessionStore } from 'src/lib/ksef/session';
+import { errorMessage, importInvoiceDetails } from 'src/lib/sync/import-details';
+import { invoiceFromMetadata } from 'src/lib/sync/mapping';
 import { KSEF_LIMITS, loadRateBudget, type KvStore } from 'src/lib/sync/rate-budget';
 import type { InvoiceStore } from 'src/lib/sync/store';
 
@@ -62,8 +62,6 @@ export type SyncDeps = {
 };
 
 type LockValue = { until: number };
-
-const errorMessage = (e: unknown) => (e instanceof Error ? e.message : String(e)).slice(0, 1000);
 
 export const runSync = async (deps: SyncDeps): Promise<SyncSummary> => {
   const now = deps.now ?? (() => new Date());
@@ -194,7 +192,7 @@ export const runSync = async (deps: SyncDeps): Promise<SyncSummary> => {
       }
 
       try {
-        await importInvoiceDetails(deps, invoice, xml);
+        await importInvoiceDetails(deps, invoice, xml, { uploadXml: true });
         summary.completed++;
       } catch (e) {
         if (!(e instanceof Fa3ParseError)) throw e;
@@ -217,62 +215,4 @@ export const runSync = async (deps: SyncDeps): Promise<SyncSummary> => {
     await deps.kv.set(KV_KEYS.lock, { until: 0 } satisfies LockValue);
   }
   return summary;
-};
-
-const importInvoiceDetails = async (
-  deps: SyncDeps,
-  invoice: { id: string; ksefNumber: string; direction: Direction; issueDate: string | null; companyId: string | null },
-  xml: string,
-) => {
-  const parsed = parseFa3(xml);
-  const currency = parsed.currency;
-
-  // Kurs dla faktur w walucie obcej: nagłówek, a gdy go brak i pozycje też go nie mają – NBP z dnia poprzedzającego.
-  let invoiceRate = parsed.headerExchangeRate;
-  const needsRate =
-    currency !== 'PLN' && invoiceRate === null && parsed.lines.some((l) => l.exchangeRate === null);
-  if (needsRate) {
-    const rateDate = parsed.saleDate ?? parsed.issueDate ?? invoice.issueDate;
-    invoiceRate = rateDate ? await deps.nbpRate(currency, rateDate) : null;
-  }
-
-  const ctx = {
-    invoiceId: invoice.id,
-    direction: invoice.direction,
-    currency,
-    invoiceRate,
-    issueDate: parsed.issueDate ?? invoice.issueDate,
-    companyId: invoice.companyId,
-  };
-  await deps.store.replaceLines(invoice.id, parsed.lines.map((line) => lineRecord(line, ctx)));
-
-  const linesPln = parsed.lines.map((line) => lineNetPln(line, ctx));
-  const netPln = linesPln.every((v): v is number => v !== null) ? sumMicros(linesPln) : null;
-
-  const correctedKsefNumber = parsed.correctedKsefNumbers[0] ?? null;
-  const correctedInvoiceId = correctedKsefNumber
-    ? await deps.store.findInvoiceIdByKsefNumber(correctedKsefNumber)
-    : null;
-
-  // XML w polu plikowym jest dodatkiem – jego błąd nie blokuje importu pozycji
-  let xmlFile: { fileId: string; label: string }[] | undefined;
-  let xmlError: string | null = null;
-  try {
-    xmlFile = [await deps.store.uploadXml(xml, `${invoice.ksefNumber}.xml`)];
-  } catch (e) {
-    xmlError = `Nie zapisano pliku XML: ${errorMessage(e)}`;
-  }
-
-  await deps.store.updateInvoice(invoice.id, {
-    saleDate: parsed.saleDate,
-    exchangeRate: currency === 'PLN' ? null : invoiceRate,
-    ...(parsed.lines.length > 0 && netPln !== null
-      ? { netAmountPln: { amountMicros: netPln, currencyCode: 'PLN' } }
-      : {}),
-    correctedKsefNumber,
-    correctedInvoiceId,
-    ...(xmlFile ? { xmlFile } : {}),
-    syncStatus: SYNC_STATUS.COMPLETE,
-    syncError: xmlError,
-  });
 };

@@ -2,6 +2,13 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.2.0
+
+- Import payment terms from FA(3) `Platnosc`: due date (explicit date, or computed from the relative term description), payment status at issue time (paid / partially paid), payment date and amount, payment method, bank account and KSeF payment id (IPKSeF)
+- A payment status set manually or by later bank matching is never downgraded by a re-import
+- "Do zapłaty" view: unpaid purchase invoices sorted by due date
+- `ksef-reprocess-xml` function re-parses the XML stored in the CRM without calling KSeF; invoices without a stored XML go back to `PENDING` to be downloaded again
+
 ## 0.1.3
 
 - Keep the KSeF refresh token in the secret `KSEF_SESSION` app variable and refresh the access token instead of a full authentication on every run (5 auth requests down to 1); the app role gains the `APPLICATIONS` permission to write it

@@ -34,6 +34,45 @@ export const SYNC_STATUS_OPTIONS = [
   { value: SYNC_STATUS.ERROR, label: 'Błąd', position: 2, color: 'red' },
 ] as const;
 
+export const PAYMENT_STATUS = { UNPAID: 'UNPAID', PARTIAL: 'PARTIAL', PAID: 'PAID' } as const;
+export type PaymentStatus = (typeof PAYMENT_STATUS)[keyof typeof PAYMENT_STATUS];
+
+export const PAYMENT_STATUS_OPTIONS = [
+  { value: PAYMENT_STATUS.UNPAID, label: 'Niezapłacona', position: 0, color: 'red' },
+  { value: PAYMENT_STATUS.PARTIAL, label: 'Częściowo', position: 1, color: 'yellow' },
+  { value: PAYMENT_STATUS.PAID, label: 'Zapłacona', position: 2, color: 'green' },
+] as const;
+
+export const DUE_DATE_SOURCE = { INVOICE: 'INVOICE', DESCRIPTION: 'DESCRIPTION' } as const;
+export type DueDateSource = (typeof DUE_DATE_SOURCE)[keyof typeof DUE_DATE_SOURCE];
+
+export const DUE_DATE_SOURCE_OPTIONS = [
+  { value: DUE_DATE_SOURCE.INVOICE, label: 'Data z faktury', position: 0, color: 'blue' },
+  { value: DUE_DATE_SOURCE.DESCRIPTION, label: 'Wyliczony z opisu', position: 1, color: 'sky' },
+] as const;
+
+// Kody FormaPlatnosci z FA(3) (1–7) plus "inna" (PlatnoscInna + OpisPlatnosci).
+export const PAYMENT_METHOD_BY_CODE: Record<string, string> = {
+  '1': 'CASH',
+  '2': 'CARD',
+  '3': 'VOUCHER',
+  '4': 'CHEQUE',
+  '5': 'CREDIT',
+  '6': 'TRANSFER',
+  '7': 'MOBILE',
+};
+
+export const PAYMENT_METHOD_OPTIONS = [
+  { value: 'TRANSFER', label: 'Przelew', position: 0, color: 'blue' },
+  { value: 'CARD', label: 'Karta', position: 1, color: 'purple' },
+  { value: 'CASH', label: 'Gotówka', position: 2, color: 'green' },
+  { value: 'MOBILE', label: 'Płatność mobilna', position: 3, color: 'cyan' },
+  { value: 'CREDIT', label: 'Kredyt', position: 4, color: 'orange' },
+  { value: 'VOUCHER', label: 'Bon', position: 5, color: 'amber' },
+  { value: 'CHEQUE', label: 'Czek', position: 6, color: 'brown' },
+  { value: 'OTHER', label: 'Inna', position: 7, color: 'gray' },
+] as const;
+
 export const COST_CATEGORY_OPTIONS = [
   { value: 'SUBCONTRACTOR', label: 'Podwykonawca', position: 0, color: 'purple' },
   { value: 'MATERIAL', label: 'Materiał', position: 1, color: 'amber' },
