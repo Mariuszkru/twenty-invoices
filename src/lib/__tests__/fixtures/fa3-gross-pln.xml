@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Faktura xmlns="http://crd.gov.pl/wzor/2025/06/25/13775/">
+  <Naglowek>
+    <KodFormularza kodSystemowy="FA (3)" wersjaSchemy="1-0E">FA</KodFormularza>
+    <WariantFormularza>3</WariantFormularza>
+    <DataWytworzeniaFa>2026-10-14T06:40:00Z</DataWytworzeniaFa>
+  </Naglowek>
+  <Podmiot1>
+    <DaneIdentyfikacyjne>
+      <NIP>7740001454</NIP>
+      <Nazwa>Sklep Sp. z o.o.</Nazwa>
+    </DaneIdentyfikacyjne>
+  </Podmiot1>
+  <Podmiot2>
+    <DaneIdentyfikacyjne>
+      <NIP>5260250274</NIP>
+      <Nazwa>Recoop Sp. z o.o.</Nazwa>
+    </DaneIdentyfikacyjne>
+  </Podmiot2>
+  <Fa>
+    <KodWaluty>PLN</KodWaluty>
+    <P_1>2026-10-14</P_1>
+    <P_2>FV/2026/10/900</P_2>
+    <P_13_1>1911.79</P_13_1>
+    <P_14_1>439.71</P_14_1>
+    <P_13_7>100.00</P_13_7>
+    <P_15>2451.50</P_15>
+    <RodzajFaktury>VAT</RodzajFaktury>
+    <FaWiersz>
+      <NrWierszaFa>1</NrWierszaFa>
+      <P_7>Ładowarka 22 kW</P_7>
+      <P_8A>szt.</P_8A>
+      <P_8B>1</P_8B>
+      <P_9B>2350.00</P_9B>
+      <P_11A>2350.00</P_11A>
+      <P_12>23</P_12>
+    </FaWiersz>
+    <FaWiersz>
+      <NrWierszaFa>2</NrWierszaFa>
+      <P_7>Opaska kablowa</P_7>
+      <P_8A>szt.</P_8A>
+      <P_8B>1</P_8B>
+      <P_9B>0.50</P_9B>
+      <P_11A>0.50</P_11A>
+      <P_12>23</P_12>
+    </FaWiersz>
+    <FaWiersz>
+      <NrWierszaFa>3</NrWierszaFa>
+      <P_7>Opaska kablowa</P_7>
+      <P_8A>szt.</P_8A>
+      <P_8B>1</P_8B>
+      <P_9B>0.50</P_9B>
+      <P_11A>0.50</P_11A>
+      <P_12>23</P_12>
+    </FaWiersz>
+    <FaWiersz>
+      <NrWierszaFa>4</NrWierszaFa>
+      <P_7>Opaska kablowa</P_7>
+      <P_8A>szt.</P_8A>
+      <P_8B>1</P_8B>
+      <P_9B>0.50</P_9B>
+      <P_11A>0.50</P_11A>
+      <P_12>23</P_12>
+    </FaWiersz>
+    <FaWiersz>
+      <NrWierszaFa>5</NrWierszaFa>
+      <P_7>Szkolenie (zw)</P_7>
+      <P_8A>usł.</P_8A>
+      <P_8B>1</P_8B>
+      <P_9B>100.00</P_9B>
+      <P_11A>100.00</P_11A>
+      <P_12>zw</P_12>
+    </FaWiersz>
+  </Fa>
+</Faktura>

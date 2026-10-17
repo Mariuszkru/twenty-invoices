@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.1.2
+
+- Derive line net amount from gross for invoices calculated from gross (only `P_9B`/`P_11A`), reconciled with the header `P_13_x` totals; such lines were imported with net 0
+
 ## 0.1.1
 
 - Grant the app role the `UPLOAD_FILE` permission so the invoice XML can be stored

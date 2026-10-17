@@ -1,7 +1,31 @@
 import { describe, expect, it } from 'vitest';
 
-import { Fa3ParseError, parseFa3 } from 'src/lib/ksef/fa3-parser';
+import { Fa3ParseError, netFromGross, numericVatRate, parseFa3 } from 'src/lib/ksef/fa3-parser';
 import { fixture } from 'src/lib/__tests__/fixtures';
+
+describe('netto z brutto', () => {
+  it.each([
+    ['23', 23],
+    ['8', 8],
+    ['0 KR', 0],
+    ['zw', null],
+    ['oo', null],
+    ['np I', null],
+    [null, null],
+  ])('stawka %s -> %s', (rate, expected) => {
+    expect(numericVatRate(rate)).toBe(expected);
+  });
+
+  it.each([
+    [2_350_000_000, '23', 1_910_570_000],
+    [-12_300_000, '23', -10_000_000],
+    [108_000_000, '8', 100_000_000],
+    [100_000_000, 'zw', 100_000_000],
+    [100_000_000, '0 WDT', 100_000_000],
+  ])('%d przy stawce %s -> %d', (gross, rate, expected) => {
+    expect(netFromGross(gross, rate)).toBe(expected);
+  });
+});
 
 describe('parseFa3', () => {
   it('czyta nagłówek i pozycje faktury VAT w PLN', () => {
@@ -62,6 +86,22 @@ describe('parseFa3', () => {
       grossMicros: -12_300_000,
       exchangeRate: 4.3,
     });
+  });
+
+  it('faktura liczona od brutto (tylko P_9B/P_11A): netto ze stawki, uzgodnione z P_13_1', () => {
+    const lines = parseFa3(fixture('fa3-gross-pln.xml')).lines;
+
+    expect(lines.map((l) => [l.netMicros, l.grossMicros])).toEqual([
+      // 2350 / 1,23 = 1910,57; −0,01 z uzgodnienia z nagłówkiem (zaokrąglenia trzech pozycji po 0,41)
+      [1_910_560_000, 2_350_000_000],
+      [410_000, 500_000],
+      [410_000, 500_000],
+      [410_000, 500_000],
+      // zwolnione: brutto = netto
+      [100_000_000, 100_000_000],
+    ]);
+    const net23 = lines.slice(0, 4).reduce((acc, l) => acc + l.netMicros, 0);
+    expect(net23).toBe(1_911_790_000);
   });
 
   it('odrzuca dokument spoza schematu FA', () => {
