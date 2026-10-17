@@ -1,0 +1,12 @@
+# Changelog
+
+All notable changes to this application are documented in this file.
+
+## 0.1.0
+
+- Initial application scaffolded with `twenty app init` (twenty-sdk 2.48.0)
+- `ksefInvoice` and `ksefInvoiceLine` objects with Company relations, a unique KSeF number index and views for sales, purchases, revenue lines and unassigned costs
+- Two-phase incremental KSeF API 2.0 sync (metadata to HWM, then rate-limited XML download) on a 15-minute cron and from the command menu
+- FA(3) line parser with correction (`StanPrzed`) handling, signed PLN margin effect and NBP fallback exchange rate
+- Relinking of imported invoices when a company gets a matching NIP
+- Health check that reports the last sync result
