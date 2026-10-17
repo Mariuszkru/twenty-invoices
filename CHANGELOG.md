@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.1.1
+
+- Grant the app role the `UPLOAD_FILE` permission so the invoice XML can be stored
+
 ## 0.1.0
 
 - Initial application scaffolded with `twenty app init` (twenty-sdk 2.48.0)

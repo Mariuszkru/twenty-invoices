@@ -1,4 +1,4 @@
-import { defineApplicationRole } from 'twenty-sdk/define';
+import { defineApplicationRole, SystemPermissionFlag } from 'twenty-sdk/define';
 
 import {
   APP_DISPLAY_NAME,
@@ -14,4 +14,6 @@ export default defineApplicationRole({
   canUpdateAllObjectRecords: true,
   canSoftDeleteAllObjectRecords: true,
   canDestroyAllObjectRecords: false,
+  // zapis oryginalnego XML faktury do pola FILES (MetadataApiClient.uploadFile)
+  permissionFlagUniversalIdentifiers: [SystemPermissionFlag.UPLOAD_FILE],
 });
