@@ -1,4 +1,5 @@
 import type { Direction } from 'src/constants/options';
+import type { InvoiceSummary } from 'src/lib/notify/messages';
 import type { Currency, InvoiceRecord, LineRecord } from 'src/lib/sync/mapping';
 
 // Dostęp do danych Twenty używany przez synchronizację. Interfejs pozwala testować logikę bez serwera.
@@ -33,6 +34,7 @@ export type InvoiceUpdate = Partial<{
   paymentMethod: string | null;
   bankAccount: string | null;
   ksefPaymentId: string | null;
+  newInvoiceNotifiedAt: string;
 }>;
 
 export type InvoiceStore = {
@@ -51,4 +53,8 @@ export type InvoiceStore = {
   findCompanyIdsByNip: (nips: string[]) => Promise<Map<string, string> | null>;
   linkCompanyByNip: (nip: string, companyId: string) => Promise<{ invoices: number; lines: number }>;
   uploadXml: (xml: string, filename: string) => Promise<{ fileId: string; label: string }>;
+  // niezapłacone (UNPAID/PARTIAL) faktury obu kierunków z terminem w jednym z podanych dni
+  findUnpaidDueOn: (dates: string[]) => Promise<InvoiceSummary[]>;
+  // kompletne faktury zakupowe zapisane w KSeF od `since`, jeszcze bez powiadomienia na czat
+  findUnnotifiedPurchases: (since: string) => Promise<InvoiceSummary[]>;
 };

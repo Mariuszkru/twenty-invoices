@@ -10,6 +10,7 @@ import { obtainAccessToken, type SessionStore } from 'src/lib/ksef/session';
 import { errorMessage, importInvoiceDetails } from 'src/lib/sync/import-details';
 import { invoiceFromMetadata } from 'src/lib/sync/mapping';
 import { KSEF_LIMITS, loadRateBudget, type KvStore } from 'src/lib/sync/rate-budget';
+import { newPurchaseInvoicesMessage } from 'src/lib/notify/messages';
 import type { InvoiceStore } from 'src/lib/sync/store';
 
 // Synchronizacja dwufazowa, bo KSeF pozwala pobrać tylko ~64 XML na godzinę:
@@ -59,6 +60,8 @@ export type SyncDeps = {
   // czas, po którym nie zaczynamy kolejnego pobrania XML (zapas względem timeoutSeconds funkcji)
   budgetMs?: number;
   log?: (message: string) => void;
+  // powiadomienie na czat o nowych fakturach zakupowych; brak = bez powiadomień
+  notify?: { send: (text: string) => Promise<void>; crmUrl: string | null };
 };
 
 type LockValue = { until: number };
@@ -208,6 +211,8 @@ export const runSync = async (deps: SyncDeps): Promise<SyncSummary> => {
     summary.message = errorMessage(e);
     log(`Synchronizacja przerwana: ${summary.message}`);
   } finally {
+    // także po przerwaniu przebiegu; nieudana wysyłka zostanie ponowiona w kolejnym
+    if (deps.notify) await notifyNewPurchases(deps, deps.notify, now, log);
     await metadataBudget.persist();
     await downloadBudget.persist();
     summary.finishedAt = now().toISOString();
@@ -215,4 +220,28 @@ export const runSync = async (deps: SyncDeps): Promise<SyncSummary> => {
     await deps.kv.set(KV_KEYS.lock, { until: 0 } satisfies LockValue);
   }
   return summary;
+};
+
+// Tylko świeże faktury (zapisane w KSeF w ostatnich dniach): pierwszy import 90 dni wstecz
+// ani ponowne pobranie starej faktury nie zasypują czatu.
+export const NEW_INVOICE_WINDOW_MS = 3 * 24 * 60 * 60 * 1000;
+
+const notifyNewPurchases = async (
+  deps: SyncDeps,
+  notify: NonNullable<SyncDeps['notify']>,
+  now: () => Date,
+  log: (message: string) => void,
+) => {
+  try {
+    const since = new Date(now().getTime() - NEW_INVOICE_WINDOW_MS).toISOString();
+    const invoices = await deps.store.findUnnotifiedPurchases(since);
+    if (invoices.length === 0) return;
+    await notify.send(newPurchaseInvoicesMessage(invoices, notify.crmUrl));
+    for (const invoice of invoices) {
+      await deps.store.updateInvoice(invoice.id, { newInvoiceNotifiedAt: now().toISOString() });
+    }
+  } catch (e) {
+    // brak powiadomienia nie zatrzymuje synchronizacji; faktury bez znacznika wyślemy w kolejnym przebiegu
+    log(`Powiadomienie o nowych fakturach nieudane: ${errorMessage(e)}`);
+  }
 };

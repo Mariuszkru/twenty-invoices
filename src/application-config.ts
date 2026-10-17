@@ -45,5 +45,23 @@ export default defineApplication({
         'Refresh token KSeF zapisywany przez synchronizację, żeby nie logować się przy każdym przebiegu. Nie edytuj; wyczyszczenie wymusza ponowne logowanie.',
       isSecret: true,
     },
+    ROCKETCHAT_WEBHOOK_URL: {
+      universalIdentifier: ID.varRocketChatWebhook,
+      label: 'Webhook Rocket.Chat',
+      description:
+        'Adres webhooka przychodzącego (Administracja → Integracje). Puste = bez powiadomień o nowych fakturach i terminach płatności.',
+      isSecret: true,
+    },
+    CRM_URL: {
+      universalIdentifier: ID.varCrmUrl,
+      label: 'Adres CRM',
+      description: 'Adres tego CRM (np. https://crm.firma.pl) do linków w powiadomieniach.',
+    },
+    PAYMENT_REMINDER_DAYS: {
+      universalIdentifier: ID.varReminderDays,
+      label: 'Przypomnienia o płatności (dni przed terminem)',
+      description: 'Lista dni przed terminem, oddzielona przecinkami.',
+      value: '3,1',
+    },
   },
 });

@@ -2,6 +2,12 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.3.0
+
+- Rocket.Chat notifications through an incoming webhook (`ROCKETCHAT_WEBHOOK_URL`, links built from `CRM_URL`)
+- New purchase invoices: one message per sync run for invoices stored in KSeF within the last 3 days, sent once per invoice (`newInvoiceNotifiedAt`); a failed send is retried on the next run
+- `payment-reminders` daily cron (06:00 UTC): unpaid purchase and sales invoices due in `PAYMENT_REMINDER_DAYS` days (default 3 and 1), at most one message per day; overdue invoices are left out until bank statement matching exists
+
 ## 0.2.0
 
 - Import payment terms from FA(3) `Platnosc`: due date (explicit date, or computed from the relative term description), payment status at issue time (paid / partially paid), payment date and amount, payment method, bank account and KSeF payment id (IPKSeF)

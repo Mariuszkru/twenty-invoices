@@ -278,5 +278,14 @@ export default defineObject({
       icon: 'IconHash',
       isSearchable: true,
     },
+    {
+      universalIdentifier: ID.invNewNotifiedAt,
+      name: 'newInvoiceNotifiedAt',
+      type: FieldType.DATE_TIME,
+      label: 'Powiadomiono o fakturze',
+      description: 'Kiedy wysłano powiadomienie o nowej fakturze zakupowej na czat.',
+      icon: 'IconBell',
+      isAuditLogged: false,
+    },
   ],
 });

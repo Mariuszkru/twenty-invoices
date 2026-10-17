@@ -1,4 +1,5 @@
 import { PAYMENT_STATUS } from 'src/constants/options';
+import type { InvoiceSummary } from 'src/lib/notify/messages';
 import type { InvoiceRecord, LineRecord } from 'src/lib/sync/mapping';
 import type { KvStore } from 'src/lib/sync/rate-budget';
 import type { InvoiceStore, InvoiceUpdate, PendingInvoice } from 'src/lib/sync/store';
@@ -17,6 +18,15 @@ const toPending = (i: StoredInvoice): PendingInvoice => ({
   companyId: i.companyId,
   paymentStatus: i.paymentStatus ?? PAYMENT_STATUS.UNPAID,
   grossAmount: i.grossAmount,
+});
+
+const toSummary = (i: StoredInvoice): InvoiceSummary => ({
+  id: i.id,
+  name: i.name,
+  counterpartyName: i.counterpartyName,
+  direction: i.direction,
+  grossAmount: i.grossAmount,
+  dueDate: i.dueDate ?? null,
 });
 
 export const createMemoryStore = () => {
@@ -62,6 +72,21 @@ export const createMemoryStore = () => {
     findCompanyIdsByNip: async (nips) =>
       new Map(nips.filter((n) => companies.has(n)).map((n) => [n, companies.get(n)!])),
     linkCompanyByNip: async () => ({ invoices: 0, lines: 0 }),
+    findUnpaidDueOn: async (dates) =>
+      invoices
+        .filter((i) => i.paymentStatus !== PAYMENT_STATUS.PAID && i.dueDate && dates.includes(i.dueDate))
+        .map(toSummary),
+    findUnnotifiedPurchases: async (since) =>
+      invoices
+        .filter(
+          (i) =>
+            i.direction === 'PURCHASE' &&
+            i.syncStatus === 'COMPLETE' &&
+            !i.newInvoiceNotifiedAt &&
+            i.permanentStorageDate >= since,
+        )
+        .sort(byStorageDate)
+        .map(toSummary),
     uploadXml: async (xml, filename) => {
       const fileId = `file-${filename}`;
       files.set(fileId, xml);

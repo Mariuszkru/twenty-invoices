@@ -4,6 +4,7 @@ import { kv } from 'twenty-sdk/logic-function';
 import { KSEF_BASE_URLS, resolveKsefEnv, type KsefEnv } from 'src/lib/ksef/environments';
 import { createKsefHttpClient } from 'src/lib/ksef/http';
 import { fetchNbpRateBefore } from 'src/lib/nbp';
+import { notifierFromEnv } from 'src/lib/notify/from-env';
 import { runSync, type SyncSummary } from 'src/lib/sync/run-sync';
 import { createTwentyStore } from 'src/lib/sync/twenty-store';
 
@@ -41,6 +42,7 @@ export const syncFromEnv = async (budgetMs: number): Promise<SyncSummary | SyncC
     nip: config.nip,
     ksefToken: config.ksefToken,
     nbpRate: (currency, date) => fetchNbpRateBefore(currency, date),
+    notify: notifierFromEnv() ?? undefined,
     session: {
       stored: process.env.KSEF_SESSION,
       save: async (value) => {

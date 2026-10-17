@@ -2,7 +2,8 @@ import { CoreApiClient } from 'twenty-client-sdk/core';
 import { MetadataApiClient } from 'twenty-client-sdk/metadata';
 
 import { ID } from 'src/constants/ids';
-import { SYNC_STATUS } from 'src/constants/options';
+import { DIRECTION, PAYMENT_STATUS, SYNC_STATUS } from 'src/constants/options';
+import type { InvoiceSummary } from 'src/lib/notify/messages';
 import type { InvoiceStore, PendingInvoice } from 'src/lib/sync/store';
 
 // Twenty ogranicza liczbę rekordów w jednej mutacji – zapisujemy paczkami.
@@ -23,6 +24,15 @@ const PENDING_INVOICE_SELECTION = {
   permanentStorageDate: true,
   companyId: true,
   paymentStatus: true,
+  grossAmount: { amountMicros: true, currencyCode: true },
+} as const;
+
+const INVOICE_SUMMARY_SELECTION = {
+  id: true,
+  name: true,
+  counterpartyName: true,
+  direction: true,
+  dueDate: true,
   grossAmount: { amountMicros: true, currencyCode: true },
 } as const;
 
@@ -167,6 +177,43 @@ export const createTwentyStore = (): InvoiceStore => {
         lines += (result.updateKsefInvoiceLines as unknown[]).length;
       }
       return { invoices: invoiceIds.length, lines };
+    },
+
+    findUnpaidDueOn: async (dates) => {
+      if (dates.length === 0) return [];
+      const result = await client.query({
+        ksefInvoices: {
+          __args: {
+            filter: {
+              paymentStatus: { in: [PAYMENT_STATUS.UNPAID, PAYMENT_STATUS.PARTIAL] },
+              or: dates.map((date) => ({ dueDate: { eq: date } })),
+            },
+            orderBy: [{ dueDate: 'AscNullsLast' }],
+            first: 200,
+          },
+          edges: { node: INVOICE_SUMMARY_SELECTION },
+        },
+      });
+      return (result.ksefInvoices as Edges<InvoiceSummary>).edges.map((e) => e.node);
+    },
+
+    findUnnotifiedPurchases: async (since) => {
+      const result = await client.query({
+        ksefInvoices: {
+          __args: {
+            filter: {
+              direction: { eq: DIRECTION.PURCHASE },
+              syncStatus: { eq: SYNC_STATUS.COMPLETE },
+              newInvoiceNotifiedAt: { is: 'NULL' },
+              permanentStorageDate: { gte: since },
+            },
+            orderBy: [{ permanentStorageDate: 'AscNullsLast' }],
+            first: 100,
+          },
+          edges: { node: INVOICE_SUMMARY_SELECTION },
+        },
+      });
+      return (result.ksefInvoices as Edges<InvoiceSummary>).edges.map((e) => e.node);
     },
 
     uploadXml: async (xml, filename) => {

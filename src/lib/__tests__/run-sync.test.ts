@@ -154,6 +154,33 @@ describe('runSync', () => {
     expect(fake.calls.filter((c) => c.includes('/auth/'))).toEqual(['POST /auth/token/refresh']);
   });
 
+  it('powiadamia raz o świeżych fakturach zakupowych; po błędzie wysyłki ponawia', async () => {
+    const fake = createFakeKsef(ksefOptions());
+    const day6 = new Date('2026-10-06T08:00:00Z');
+    const sent: string[] = [];
+    let failing = true;
+    const notify = {
+      crmUrl: null,
+      send: async (text: string) => {
+        if (failing) throw new Error('Rocket.Chat niedostępny');
+        sent.push(text);
+      },
+    };
+
+    await runSync(deps(fake, { now: () => day6, notify }));
+    expect(sent).toEqual([]);
+
+    failing = false;
+    await runSync(deps(fake, { now: () => new Date(day6.getTime() + 15 * 60_000), notify }));
+    await runSync(deps(fake, { now: () => new Date(day6.getTime() + 30 * 60_000), notify }));
+
+    // tylko zakup zapisany w KSeF w ostatnich 3 dniach (korekta z 05.10), bez sprzedaży i bez faktury z 15.09
+    expect(sent).toHaveLength(1);
+    expect(sent[0]).toContain('Nowa faktura zakupowa w KSeF');
+    expect(sent[0]).toContain('KOR/2026/7');
+    expect(sent[0]).not.toContain('FV/9/2026/44');
+  });
+
   it('przy limicie 429 zostawia faktury jako PENDING do kolejnego przebiegu', async () => {
     const fake = createFakeKsef(ksefOptions({ rateLimitDownloads: true }));
     const summary = await runSync(deps(fake));

@@ -33,6 +33,7 @@ export const ID = {
   invPaymentMethod: '647e4bdf-a067-47d0-bb3b-34b896fcac79',
   invBankAccount: '69fdac1f-bdec-44a7-baa5-292ad632ecb1',
   invKsefPaymentId: '00e83a5f-88ff-44e7-94a6-102c7e8ca933',
+  invNewNotifiedAt: '489b217b-1c4d-4e7c-bb62-e1f016ec485c',
 
   lineInvoice: 'f524ee47-f461-427d-ad32-696ca1f68fca',
   lineDirection: '55ccab41-92c6-4701-964f-b00d4e26a854',
@@ -66,11 +67,15 @@ export const ID = {
   varKsefNip: '7555b5ab-abb4-42c0-aa04-66aaf48d3de9',
   varKsefEnv: '1f068e1b-1b35-4304-a321-8d0270c13b36',
   varKsefSession: '412e9e48-3b3f-4776-85bb-25254ea8c2d4',
+  varRocketChatWebhook: '68afff76-5d76-423e-a05a-b3ec8a12d466',
+  varCrmUrl: '9f6ef169-14c4-4cab-8ff1-79010ad9bdce',
+  varReminderDays: '097317c9-2836-44d6-bd83-4fd5dc62005a',
 
   fnSyncCron: 'e34bb764-0155-4820-82fe-734e797ef86f',
   fnSyncNow: '9c089662-b2d6-4d0b-818a-980dc8323c21',
   fnRelinkCompany: '837d1f8a-2e6c-4876-b412-de9667a38bb1',
   fnReprocessXml: 'e47da952-2b43-444e-be9e-36042643e68f',
+  fnPaymentReminders: 'e49e7f76-c428-4517-a573-2b9cb4bc10cb',
 
   fcSyncCommand: 'a00503de-99a0-408b-993d-bd1725886bff',
   cmdSync: 'bd29b4c2-6dfa-4c5b-b7d2-ecd9d46f783a',
