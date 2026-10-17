@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Faktura xmlns="http://crd.gov.pl/wzor/2025/06/25/13775/" xmlns:etd="http://crd.gov.pl/xml/schematy/dziedzinowe/mf/2022/01/05/eD/DefinicjeTypy/">
+  <Naglowek>
+    <KodFormularza kodSystemowy="FA (3)" wersjaSchemy="1-0E">FA</KodFormularza>
+    <WariantFormularza>3</WariantFormularza>
+    <DataWytworzeniaFa>2026-10-01T10:00:00Z</DataWytworzeniaFa>
+  </Naglowek>
+  <Podmiot1>
+    <DaneIdentyfikacyjne>
+      <NIP>5260250274</NIP>
+      <Nazwa>Recoop Sp. z o.o.</Nazwa>
+    </DaneIdentyfikacyjne>
+  </Podmiot1>
+  <Podmiot2>
+    <DaneIdentyfikacyjne>
+      <NIP>7740001454</NIP>
+      <Nazwa>Klient S.A.</Nazwa>
+    </DaneIdentyfikacyjne>
+  </Podmiot2>
+  <Fa>
+    <KodWaluty>PLN</KodWaluty>
+    <P_1>2026-10-01</P_1>
+    <P_2>FV/10/2026/001</P_2>
+    <P_6>2026-09-30</P_6>
+    <P_13_1>1500.00</P_13_1>
+    <P_14_1>345.00</P_14_1>
+    <P_15>1845.00</P_15>
+    <RodzajFaktury>VAT</RodzajFaktury>
+    <FaWiersz>
+      <NrWierszaFa>1</NrWierszaFa>
+      <UU_ID>11111111-1111-4111-8111-111111111111</UU_ID>
+      <P_7>Wdrożenie CRM – etap 1</P_7>
+      <Indeks>WDR-01</Indeks>
+      <P_8A>godz.</P_8A>
+      <P_8B>10</P_8B>
+      <P_9A>120.00</P_9A>
+      <P_11>1200.00</P_11>
+      <P_12>23</P_12>
+    </FaWiersz>
+    <FaWiersz>
+      <NrWierszaFa>2</NrWierszaFa>
+      <P_7>Licencja roczna</P_7>
+      <PKWiU>58.29.50.0</PKWiU>
+      <P_8A>szt.</P_8A>
+      <P_8B>1</P_8B>
+      <P_9A>300.00</P_9A>
+      <P_11>300.00</P_11>
+      <P_12>23</P_12>
+    </FaWiersz>
+  </Fa>
+</Faktura>

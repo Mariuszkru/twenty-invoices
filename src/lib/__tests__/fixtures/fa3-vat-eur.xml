@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Faktura xmlns="http://crd.gov.pl/wzor/2025/06/25/13775/">
+  <Naglowek>
+    <KodFormularza kodSystemowy="FA (3)" wersjaSchemy="1-0E">FA</KodFormularza>
+    <WariantFormularza>3</WariantFormularza>
+    <DataWytworzeniaFa>2026-10-02T10:00:00Z</DataWytworzeniaFa>
+  </Naglowek>
+  <Podmiot1>
+    <DaneIdentyfikacyjne>
+      <NIP>5260250274</NIP>
+      <Nazwa>Recoop Sp. z o.o.</Nazwa>
+    </DaneIdentyfikacyjne>
+  </Podmiot1>
+  <Podmiot2>
+    <DaneIdentyfikacyjne>
+      <KodUE>DE</KodUE>
+      <NrVatUE>123456789</NrVatUE>
+      <Nazwa>Kunde GmbH</Nazwa>
+    </DaneIdentyfikacyjne>
+  </Podmiot2>
+  <Fa>
+    <KodWaluty>EUR</KodWaluty>
+    <P_1>2026-10-02</P_1>
+    <P_2>FV/10/2026/002</P_2>
+    <P_13_6_2>1000.50</P_13_6_2>
+    <P_15>1000.50</P_15>
+    <RodzajFaktury>VAT</RodzajFaktury>
+    <FaWiersz>
+      <NrWierszaFa>1</NrWierszaFa>
+      <P_7>Consulting</P_7>
+      <P_8A>h</P_8A>
+      <P_8B>10.5</P_8B>
+      <P_9A>95.2857</P_9A>
+      <P_11>1000.50</P_11>
+      <P_12>0 WDT</P_12>
+    </FaWiersz>
+    <FaWiersz>
+      <NrWierszaFa>2</NrWierszaFa>
+      <P_7>Rabat liczony od brutto</P_7>
+      <P_11A>-12.30</P_11A>
+      <P_11Vat>-2.30</P_11Vat>
+      <P_12>23</P_12>
+      <KursWaluty>4.3000</KursWaluty>
+    </FaWiersz>
+  </Fa>
+</Faktura>
