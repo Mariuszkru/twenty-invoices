@@ -192,6 +192,18 @@ describe('runSync', () => {
     expect(memory.lines).toHaveLength(8);
   });
 
+  it('kolejny przebieg odświeża token zamiast logować się od nowa', async () => {
+    const fake = createFakeKsef(ksefOptions());
+    let stored: string | undefined;
+    const session = () => ({ stored, save: async (v: string) => void (stored = v) });
+
+    await runSync(deps(fake, { session: session() }));
+    fake.calls.length = 0;
+    await runSync(deps(fake, { session: session(), now: () => new Date(NOW.getTime() + 15 * 60_000) }));
+
+    expect(fake.calls.filter((c) => c.includes('/auth/'))).toEqual(['POST /auth/token/refresh']);
+  });
+
   it('przy limicie 429 zostawia faktury jako PENDING do kolejnego przebiegu', async () => {
     const fake = createFakeKsef(ksefOptions({ rateLimitDownloads: true }));
     const summary = await runSync(deps(fake));

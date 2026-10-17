@@ -30,7 +30,11 @@ describe('authenticateWithKsefToken', () => {
       sleep: noSleep,
     });
 
-    expect(token).toBe('ACCESS');
+    expect(token).toEqual({
+      accessToken: 'ACCESS',
+      refreshToken: 'REFRESH',
+      refreshTokenValidUntil: '2099-01-01T00:00:00Z',
+    });
     expect(fake.calls).toEqual([
       'POST /auth/challenge',
       'GET /security/public-key-certificates',

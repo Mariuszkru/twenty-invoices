@@ -78,6 +78,10 @@ export const createFakeKsef = (options: FakeKsefOptions) => {
         refreshToken: { token: 'REFRESH', validUntil: '2099-01-01T00:00:00Z' },
       });
     }
+    if (path === '/auth/token/refresh') {
+      if (auth !== 'Bearer REFRESH') return json({ title: 'Nieprawidłowy refresh token' }, 401);
+      return json({ accessToken: { token: 'ACCESS', validUntil: '2099-01-01T00:00:00Z' } });
+    }
     if (auth !== 'Bearer ACCESS') return json({}, 401);
 
     if (path === '/invoices/query/metadata') {

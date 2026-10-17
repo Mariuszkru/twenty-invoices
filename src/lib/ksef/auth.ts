@@ -67,6 +67,21 @@ type AuthenticateParams = {
   maxPolls?: number;
 };
 
+export type KsefTokens = {
+  accessToken: string;
+  refreshToken: string;
+  refreshTokenValidUntil: string;
+};
+
+// Nowy accessToken z refresh tokena (ważnego do 7 dni) – 1 zapytanie zamiast pełnego uwierzytelnienia.
+export const refreshAccessToken = async (http: KsefHttpClient, refreshToken: string) => {
+  const response = await http.json<{ accessToken: { token: string; validUntil: string } }>(
+    '/auth/token/refresh',
+    { method: 'POST', bearer: refreshToken },
+  );
+  return response.accessToken.token;
+};
+
 export const authenticateWithKsefToken = async ({
   http,
   nip,
@@ -74,7 +89,7 @@ export const authenticateWithKsefToken = async ({
   sleep = (ms) => new Promise((r) => setTimeout(r, ms)),
   now = () => new Date(),
   maxPolls = 20,
-}: AuthenticateParams): Promise<string> => {
+}: AuthenticateParams): Promise<KsefTokens> => {
   const challenge = await http.json<ChallengeResponse>('/auth/challenge', {
     method: 'POST',
   });
@@ -113,5 +128,9 @@ export const authenticateWithKsefToken = async ({
     method: 'POST',
     bearer: operationToken,
   });
-  return tokens.accessToken.token;
+  return {
+    accessToken: tokens.accessToken.token,
+    refreshToken: tokens.refreshToken.token,
+    refreshTokenValidUntil: tokens.refreshToken.validUntil,
+  };
 };

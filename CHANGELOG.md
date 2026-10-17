@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.1.3
+
+- Keep the KSeF refresh token in the secret `KSEF_SESSION` app variable and refresh the access token instead of a full authentication on every run (5 auth requests down to 1); the app role gains the `APPLICATIONS` permission to write it
+
 ## 0.1.2
 
 - Derive line net amount from gross for invoices calculated from gross (only `P_9B`/`P_11A`), reconciled with the header `P_13_x` totals; such lines were imported with net 0

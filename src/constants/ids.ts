@@ -57,6 +57,7 @@ export const ID = {
   varKsefToken: '42453fe9-6b12-46c5-9a4f-a4c81dbcb9bb',
   varKsefNip: '7555b5ab-abb4-42c0-aa04-66aaf48d3de9',
   varKsefEnv: '1f068e1b-1b35-4304-a321-8d0270c13b36',
+  varKsefSession: '412e9e48-3b3f-4776-85bb-25254ea8c2d4',
 
   fnSyncCron: 'e34bb764-0155-4820-82fe-734e797ef86f',
   fnSyncNow: '9c089662-b2d6-4d0b-818a-980dc8323c21',

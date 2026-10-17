@@ -38,5 +38,12 @@ export default defineApplication({
       ],
       value: 'test',
     },
+    KSEF_SESSION: {
+      universalIdentifier: ID.varKsefSession,
+      label: 'Sesja KSeF (automatyczna)',
+      description:
+        'Refresh token KSeF zapisywany przez synchronizację, żeby nie logować się przy każdym przebiegu. Nie edytuj; wyczyszczenie wymusza ponowne logowanie.',
+      isSecret: true,
+    },
   },
 });

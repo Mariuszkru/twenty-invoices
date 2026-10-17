@@ -14,6 +14,7 @@ export default defineApplicationRole({
   canUpdateAllObjectRecords: true,
   canSoftDeleteAllObjectRecords: true,
   canDestroyAllObjectRecords: false,
-  // zapis oryginalnego XML faktury do pola FILES (MetadataApiClient.uploadFile)
-  permissionFlagUniversalIdentifiers: [SystemPermissionFlag.UPLOAD_FILE],
+  // UPLOAD_FILE: zapis oryginalnego XML faktury do pola FILES (MetadataApiClient.uploadFile)
+  // APPLICATIONS: zapis sesji KSeF do własnej zmiennej KSEF_SESSION (updateOneApplicationVariable)
+  permissionFlagUniversalIdentifiers: [SystemPermissionFlag.UPLOAD_FILE, SystemPermissionFlag.APPLICATIONS],
 });

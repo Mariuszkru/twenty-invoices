@@ -1,6 +1,6 @@
 import { DIRECTION, SYNC_STATUS, type Direction } from 'src/constants/options';
 import { sumMicros } from 'src/lib/decimal';
-import { authenticateWithKsefToken } from 'src/lib/ksef/auth';
+import { obtainAccessToken, type SessionStore } from 'src/lib/ksef/session';
 import { Fa3ParseError, parseFa3 } from 'src/lib/ksef/fa3-parser';
 import { KsefApiError, KsefRateLimitError, type KsefHttpClient } from 'src/lib/ksef/http';
 import {
@@ -53,6 +53,8 @@ export type SyncDeps = {
   nip: string;
   ksefToken: string;
   nbpRate: (currency: string, date: string) => Promise<number | null>;
+  // refresh token KSeF przechowywany między przebiegami; bez niego każdy przebieg uwierzytelnia się od nowa
+  session?: SessionStore;
   now?: () => Date;
   // czas, po którym nie zaczynamy kolejnego pobrania XML (zapas względem timeoutSeconds funkcji)
   budgetMs?: number;
@@ -102,11 +104,13 @@ export const runSync = async (deps: SyncDeps): Promise<SyncSummary> => {
   );
 
   try {
-    const accessToken = await authenticateWithKsefToken({
+    const accessToken = await obtainAccessToken({
       http: deps.http,
       nip: deps.nip,
       ksefToken: deps.ksefToken,
+      session: deps.session,
       now,
+      log,
     });
 
     // Faza 1: metadane obu kierunków

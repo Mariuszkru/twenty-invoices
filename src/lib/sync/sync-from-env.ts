@@ -1,3 +1,4 @@
+import { MetadataApiClient } from 'twenty-client-sdk/metadata';
 import { kv } from 'twenty-sdk/logic-function';
 
 import { KSEF_BASE_URLS, resolveKsefEnv, type KsefEnv } from 'src/lib/ksef/environments';
@@ -40,6 +41,14 @@ export const syncFromEnv = async (budgetMs: number): Promise<SyncSummary | SyncC
     nip: config.nip,
     ksefToken: config.ksefToken,
     nbpRate: (currency, date) => fetchNbpRateBefore(currency, date),
+    session: {
+      stored: process.env.KSEF_SESSION,
+      save: async (value) => {
+        await new MetadataApiClient({ runAs: 'application' }).mutation({
+          updateOneApplicationVariable: { __args: { key: 'KSEF_SESSION', value } },
+        });
+      },
+    },
     budgetMs,
     log: (message) => console.log(`[ksef-sync] ${message}`),
   });
