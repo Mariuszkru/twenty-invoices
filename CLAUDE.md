@@ -18,6 +18,7 @@
 - `src/lib/sync/store.ts`: `InvoiceStore` interface. `twenty-store.ts` implements it with `CoreApiClient({ runAs: 'application' })` (loosely typed until the client is generated). Tests use an in-memory store and the fake KSeF in `src/lib/__tests__/fake-ksef.ts`, so tests never hit real APIs.
 - `marginEffectPln` sign convention: sale +, purchase −, `StanPrzed` line flipped.
 - Company matching relies on the `company.nip` field from the separate `regon-nip` app. `findCompanyIdsByNip` returns `null` when that field does not exist.
+- Rocket.Chat: every message sent to Rocket.Chat must have link previews disabled (`parseUrls: false` in the webhook payload). Send them only through `createRocketChatSender` in `src/lib/notify/rocketchat.ts`, which sets this flag, and never post to the webhook directly.
 - IDs: every `universalIdentifier` is in `src/constants/ids.ts` (view field/filter IDs are inline in `src/views/`). They are fixed once deployed.
 
 ## Base documentation
