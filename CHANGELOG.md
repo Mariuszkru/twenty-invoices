@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.3.1
+
+- Disable link previews in Rocket.Chat messages (`parseUrls: false`)
+
 ## 0.3.0
 
 - Rocket.Chat notifications through an incoming webhook (`ROCKETCHAT_WEBHOOK_URL`, links built from `CRM_URL`)

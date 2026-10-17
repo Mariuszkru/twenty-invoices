@@ -121,7 +121,7 @@ describe('createRocketChatSender', () => {
       return new Response('{"success":true}', { status: 200 });
     }) as unknown as typeof fetch);
     await ok('cześć');
-    expect(calls).toEqual([{ url: 'https://chat/hooks/x', body: '{"text":"cześć"}' }]);
+    expect(calls).toEqual([{ url: 'https://chat/hooks/x', body: '{"text":"cześć","parseUrls":false}' }]);
 
     const failing = createRocketChatSender('https://chat/hooks/x', (async () =>
       new Response('', { status: 404 })) as unknown as typeof fetch);
