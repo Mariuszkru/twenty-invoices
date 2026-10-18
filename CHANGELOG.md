@@ -2,6 +2,11 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.5.2
+
+- The "Importuj faktury spoza KSeF (Symfonia)" command is shown in the Faktury KSeF object context instead of the Workspace section
+- The import side panel uses Twenty UI styles (buttons, icons, theme tokens for light and dark mode), shows the description in a framed box, and accepts a file by drag and drop or by clicking the drop zone. The selected file name and size are shown, and files other than `.txt` and `.xml` are rejected
+
 ## 0.5.1
 
 - `source` has only two values: `KSEF` (KSeF) and `MANUAL` (Import manualny). The import format (enova or Symfonia) is no longer stored on the invoice; it is still returned by `ksef-import-xml` and written to its log. Existing `ENOVA`/`SYMFONIA` invoices were moved to `MANUAL` before the old options were removed

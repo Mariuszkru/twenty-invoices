@@ -4,8 +4,9 @@ import { ID } from 'src/constants/ids';
 
 export default defineCommandMenuItem({
   universalIdentifier: ID.cmdImportXml,
-  label: 'Importuj faktury spoza KSeF (Symfonia, enova)',
+  label: 'Importuj faktury spoza KSeF (Symfonia)',
   shortLabel: 'Import faktur',
-  availabilityType: 'GLOBAL',
+  availabilityType: 'GLOBAL_OBJECT_CONTEXT',
+  availabilityObjectUniversalIdentifier: ID.invoiceObject,
   frontComponentUniversalIdentifier: ID.fcImportXml,
 });
