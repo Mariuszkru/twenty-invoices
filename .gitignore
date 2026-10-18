@@ -41,3 +41,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 *.d.ts
+
+# próbki eksportów z danymi osobowymi klientów
+samples/
