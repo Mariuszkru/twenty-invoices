@@ -81,8 +81,9 @@ const BankAllocate = () => {
   const allocatedMicros = Object.values(selected).reduce((sum, value) => sum + (toMicros(value) ?? 0), 0);
   const leftMicros = (transaction?.amount.amountMicros ?? 0) - allocatedMicros;
 
-  // faktury już rozliczone (status Zapłacona albo nic do zapłaty) chowamy, dopóki ich nie szukasz albo nie włączysz
-  const isSettled = (c: Candidate) => c.alreadyPaid || c.remainingMicros <= 0;
+  // faktury już rozliczone (status Zapłacona albo nic do zapłaty) chowamy, dopóki ich nie szukasz albo nie włączysz;
+  // zapłaconą z kwotą równą transakcji pokazujemy zawsze – to zwykle faktura opłacona z góry tym przelewem
+  const isSettled = (c: Candidate) => !c.sameAmount && (c.alreadyPaid || c.remainingMicros <= 0);
   const settledCount = (context?.candidates ?? []).filter((c) => isSettled(c) && selected[c.id] === undefined).length;
 
   const visible = useMemo(() => {

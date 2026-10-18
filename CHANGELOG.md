@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.7.4
+
+- Invoices already marked paid stay visible in the "Rozlicz przelew" panel when their amount not yet allocated from the bank equals the transaction amount
+
 ## 0.7.3
 
 - The "Rozlicz przelew" panel proposes first the invoices whose remaining amount equals the transaction amount, tagged "ta sama kwota"
