@@ -63,5 +63,35 @@ export default defineApplication({
       description: 'Lista dni przed terminem, oddzielona przecinkami.',
       value: '3,1',
     },
+    ENABLEBANKING_APP_ID: {
+      universalIdentifier: ID.varEbAppId,
+      label: 'Enable Banking: identyfikator aplikacji',
+      description:
+        'Application ID z Control Panel Enable Banking. Puste = bez pobierania wyciągów bankowych.',
+    },
+    ENABLEBANKING_PRIVATE_KEY: {
+      universalIdentifier: ID.varEbPrivateKey,
+      label: 'Enable Banking: klucz prywatny',
+      description: 'Klucz RSA (PEM) aplikacji Enable Banking, którym podpisywane są zapytania (JWT RS256).',
+      isSecret: true,
+    },
+    ENABLEBANKING_ASPSP: {
+      universalIdentifier: ID.varEbAspsp,
+      label: 'Enable Banking: bank',
+      description: 'Nazwa banku dokładnie tak, jak na liście Enable Banking (np. mBank, PKO BP).',
+    },
+    ENABLEBANKING_COUNTRY: {
+      universalIdentifier: ID.varEbCountry,
+      label: 'Enable Banking: kraj banku',
+      description: 'Dwuliterowy kod kraju banku.',
+      value: 'PL',
+    },
+    ENABLEBANKING_SESSION: {
+      universalIdentifier: ID.varEbSession,
+      label: 'Enable Banking: sesja (automatyczna)',
+      description:
+        'Zgoda na odczyt rachunku zapisywana po autoryzacji w banku. Nie edytuj; wyczyszczenie wymaga ponownego połączenia z bankiem.',
+      isSecret: true,
+    },
   },
 });
