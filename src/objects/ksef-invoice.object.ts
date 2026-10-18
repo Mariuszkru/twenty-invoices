@@ -215,6 +215,17 @@ export default defineObject({
       universalSettings: { relationType: RelationType.ONE_TO_MANY },
     },
     {
+      universalIdentifier: ID.invBankTransactions,
+      name: 'bankTransactions',
+      type: FieldType.RELATION,
+      label: 'Płatności z wyciągu',
+      description: 'Transakcje bankowe przypisane do faktury; ich suma wyznacza status płatności.',
+      icon: 'IconBuildingBank',
+      relationTargetObjectMetadataUniversalIdentifier: ID.bankTxObject,
+      relationTargetFieldMetadataUniversalIdentifier: ID.btxInvoice,
+      universalSettings: { relationType: RelationType.ONE_TO_MANY },
+    },
+    {
       universalIdentifier: ID.invXmlFile,
       name: 'xmlFile',
       type: FieldType.FILES,

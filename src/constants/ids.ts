@@ -3,6 +3,7 @@
 export const ID = {
   invoiceObject: '9ff04abb-6fa9-4f3c-a42a-c029d9bc5f53',
   lineObject: '90705ba0-514f-426b-a964-01afeeb53e14',
+  bankTxObject: '4c929426-aac4-4452-99f5-6ef0370db918',
 
   invKsefNumber: 'ad20e42e-5477-4d2d-85de-1e5cf1f0996b',
   invDirection: '1d290559-c203-4f98-a53d-688832e266b6',
@@ -36,6 +37,7 @@ export const ID = {
   invNewNotifiedAt: '489b217b-1c4d-4e7c-bb62-e1f016ec485c',
   invPerson: 'b57b1d86-35b4-44c0-a84f-3ee95e1e0a82',
   invSource: 'f551067a-4a87-4db4-834f-bbece1d43c89',
+  invBankTransactions: '5e357785-66e3-4712-8579-2e787255452c',
 
   lineInvoice: 'f524ee47-f461-427d-ad32-696ca1f68fca',
   lineDirection: '55ccab41-92c6-4701-964f-b00d4e26a854',
@@ -57,6 +59,19 @@ export const ID = {
   lineCostCategory: 'b4413ac6-76fc-4fa9-a078-dfde441565d4',
   lineAllocationStatus: '42463b61-a4a7-43c2-b2e8-67c3ea803318',
 
+  btxExternalId: '12343c5c-aea0-4f33-93d3-eeec5f01f2a8',
+  btxBookingDate: '31d0cbab-2a62-4ee5-9bfd-7c86867eb1fd',
+  btxValueDate: '56d16a95-dd73-47aa-9079-b390eea4e7cb',
+  btxDirection: 'c4fcf1d8-8709-4dd6-866b-da659faecafe',
+  btxAmount: '16b76f7f-5c10-4fb2-8b58-727de2814d4c',
+  btxCounterpartyName: '3b9bb040-94e9-4c12-b98e-a9a505fe2bec',
+  btxCounterpartyAccount: '3014bb02-b0b8-4295-ac2e-5938fe33491f',
+  btxRemittance: '559fa27e-5d3f-478f-8ce5-61352f27b4f5',
+  btxAccountIban: '7e8decf7-1792-4638-acef-320129343c1d',
+  btxMatchStatus: '4ecf7cd1-36d7-4e12-8cc4-5d377b78d0f5',
+  btxMatchNote: 'a9f9da1c-9d01-4029-acea-3cd600cc95bc',
+  btxInvoice: '59e52252-8deb-4e98-97fc-47f47ee5c912',
+
   companyKsefInvoices: '6bb2c257-c564-483b-9d16-24fa20ea4df2',
   companyKsefInvoiceLines: '8805ede4-f75c-453a-a366-c454e775d055',
   personKsefInvoices: '07a5397b-e790-4b58-9a04-f547201b630b',
@@ -65,6 +80,8 @@ export const ID = {
   idxKsefNumberField: '9870e35a-2fa9-4933-84e6-44e658789773',
   idxSyncStatus: '8252e0e5-2635-4978-8b42-56b9da20870e',
   idxSyncStatusField: '92852527-dd39-4e5e-a201-bfc8e11d7bd3',
+  idxBtxExternalId: '23dbd6fd-ea6e-4e49-8e4c-517fadbad02e',
+  idxBtxExternalIdField: '6fb456b9-4ffb-4774-b880-a2c7d2072d27',
 
   varKsefToken: '42453fe9-6b12-46c5-9a4f-a4c81dbcb9bb',
   varKsefNip: '7555b5ab-abb4-42c0-aa04-66aaf48d3de9',
@@ -73,6 +90,11 @@ export const ID = {
   varRocketChatWebhook: '68afff76-5d76-423e-a05a-b3ec8a12d466',
   varCrmUrl: '9f6ef169-14c4-4cab-8ff1-79010ad9bdce',
   varReminderDays: '097317c9-2836-44d6-bd83-4fd5dc62005a',
+  varEbAppId: '2bb087c9-bbd7-4b24-b0e7-83c73aa01ddf',
+  varEbPrivateKey: '8d2812a7-3614-4bf9-bd19-48567722fd74',
+  varEbAspsp: '870e8ef7-2ae7-4ae9-ac9d-f7295a0d32c7',
+  varEbCountry: '13ebd0bd-d6d4-4d14-afed-12305447cb07',
+  varEbSession: 'a6d55504-e8e6-4e69-8714-4bd5f30bc5df',
 
   fnSyncCron: 'e34bb764-0155-4820-82fe-734e797ef86f',
   fnSyncNow: '9c089662-b2d6-4d0b-818a-980dc8323c21',
@@ -80,17 +102,27 @@ export const ID = {
   fnReprocessXml: 'e47da952-2b43-444e-be9e-36042643e68f',
   fnPaymentReminders: 'e49e7f76-c428-4517-a573-2b9cb4bc10cb',
   fnImportXml: '937a8025-3870-40ce-b182-45a714eb6011',
+  fnBankSync: 'bcdbd805-1e80-438f-92a6-85d9fb45b9cb',
+  fnBankSyncNow: '89a0c65b-96f5-4dd3-93e3-ea6270777e71',
+  fnBankConnect: 'c7b526b2-ab33-4a21-ad10-9e67bb1b29cb',
+  fnBankCallback: 'd6846b17-1ad8-42ec-8cf6-6d753b4783ad',
+  fnBankStatus: '415edb07-93ae-4777-9307-a0ce4298a001',
+  fnBankTxUpdated: '330c26e5-3c1b-49e6-ac07-437a6c060c2a',
 
   fcSyncCommand: 'a00503de-99a0-408b-993d-bd1725886bff',
   cmdSync: 'bd29b4c2-6dfa-4c5b-b7d2-ecd9d46f783a',
   fcImportXml: '644b22b7-d8bf-4b82-9153-9fe9a834130f',
   cmdImportXml: 'f71dfbb5-fb4b-4bfd-a23d-a036dd82ccd3',
+  fcBankConnect: '9f6a6cde-b84e-47c1-8463-caf3d669b7ed',
+  cmdBankConnect: '04485172-16a4-49ed-bf42-62a84b64f4d0',
 
   viewSales: '77628d2c-df5b-41ff-960e-a6ae91d3f177',
   viewPurchases: 'e05d113d-d2a6-40ef-97ff-e30269f23cc1',
   viewCostLines: '8e0cf93b-6fc0-446a-ad87-d1522202afb0',
   viewRevenueLines: '8758f80c-6068-43f4-bdca-ec0291ffe15e',
   viewToPay: '90c386af-e509-42af-a471-0ff2a1734d76',
+  viewBankTx: 'b04b4fb3-3239-430f-a3be-1c24c6daf195',
+  viewBankUnmatched: '711c92e4-474c-4f5b-9612-749b7b3d6808',
 
   navFolder: '5365d09a-4cec-43cf-afc9-9d51d801d21c',
   navSales: '63841482-5913-45ee-86c1-ed6f235349e2',
@@ -98,4 +130,6 @@ export const ID = {
   navCostLines: '60c29b3e-2af3-40ec-99b5-df4c56d76e84',
   navRevenueLines: '80b74dd7-3463-4a3a-8084-426cac493961',
   navToPay: '55c72298-0d46-4be4-99e4-4cfffa10ac65',
+  navBankTx: 'c2895e59-9791-45b9-b147-03d39fd512a1',
+  navBankUnmatched: '7bd56451-29b9-4499-aa07-4d118093e63e',
 } as const;

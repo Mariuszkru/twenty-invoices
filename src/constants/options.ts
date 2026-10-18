@@ -102,3 +102,27 @@ export const ALLOCATION_STATUS_OPTIONS = [
   { value: ALLOCATION_STATUS.PARTIAL, label: 'Częściowo', position: 1, color: 'yellow' },
   { value: ALLOCATION_STATUS.ASSIGNED, label: 'Przypisana', position: 2, color: 'green' },
 ] as const;
+
+// Transakcje z wyciągu bankowego (Enable Banking): wpływ albo wydatek, kwota zawsze dodatnia.
+export const BANK_DIRECTION = { CREDIT: 'CREDIT', DEBIT: 'DEBIT' } as const;
+export type BankDirection = (typeof BANK_DIRECTION)[keyof typeof BANK_DIRECTION];
+
+export const BANK_DIRECTION_OPTIONS = [
+  { value: BANK_DIRECTION.CREDIT, label: 'Wpływ', position: 0, color: 'green' },
+  { value: BANK_DIRECTION.DEBIT, label: 'Wydatek', position: 1, color: 'orange' },
+] as const;
+
+export const MATCH_STATUS = {
+  AUTO: 'AUTO',
+  MANUAL: 'MANUAL',
+  UNMATCHED: 'UNMATCHED',
+  IGNORED: 'IGNORED',
+} as const;
+export type MatchStatus = (typeof MATCH_STATUS)[keyof typeof MATCH_STATUS];
+
+export const MATCH_STATUS_OPTIONS = [
+  { value: MATCH_STATUS.AUTO, label: 'Dopasowana automatycznie', position: 0, color: 'green' },
+  { value: MATCH_STATUS.MANUAL, label: 'Przypisana ręcznie', position: 1, color: 'blue' },
+  { value: MATCH_STATUS.UNMATCHED, label: 'Nieprzypisana', position: 2, color: 'yellow' },
+  { value: MATCH_STATUS.IGNORED, label: 'Pominięta', position: 3, color: 'gray' },
+] as const;
