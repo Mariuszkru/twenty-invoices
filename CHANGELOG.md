@@ -2,6 +2,14 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.7.0
+
+- New `paymentAllocation` object ("Rozliczenia płatności"): the part of a bank transaction that pays an invoice. One transaction can pay several invoices (collective transfer) and an invoice can still have several payments. It replaces the `invoice` relation on `bankTransaction` and `bankTransactions` on `ksefInvoice` (now `allocations` and `paymentAllocations`). Invoice payment status is the sum of its allocations, skipping ignored transactions
+- Collective transfers are recognised automatically when the title contains several invoice numbers and their remaining amounts add up to the transfer amount
+- "Rozlicz przelew z fakturami" command on a transaction: a side panel listing open invoices of the same direction and currency, the counterparty's first. Tick invoices, adjust amounts (prefilled with the remaining amount) and save; saving replaces the transaction's allocations and recalculates the affected invoices
+- An invoice number starting with a digit now also matches when the bank glues letters in front of it ("NR26/FAAELE/009722")
+- Allocations added, changed or removed directly in the CRM recalculate the invoices (`payment-allocation-changed`); marking a transaction "Pominięta" or undoing it recalculates the invoices of its allocations
+
 ## 0.6.1
 
 - Transactions are also linked to invoices that were already marked paid (issued in the last 120 days), as a payment trail. Their payment status, amount and date stay unchanged, and an invoice accepts transactions only up to its gross amount. The run summary reports them separately (`linkedToPaid`)
