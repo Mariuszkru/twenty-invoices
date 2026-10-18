@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.7.2
+
+- The "Rozlicz przelew" panel hides invoices that are already settled (marked paid or with nothing left to pay). They show up when you search by number or tick "Pokaż faktury już zapłacone"; invoices already allocated to the transaction are always shown
+
 ## 0.7.1
 
 - The remaining amount used for matching and in the "Rozlicz przelew" panel comes from bank allocations, not from the invoice's "Zapłacono" field. Invoices paid in advance (the field filled from FA(3)) or marked paid by hand can now take the transfer

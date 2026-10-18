@@ -52,6 +52,7 @@ const BankAllocate = () => {
   // kwota wpisana dla zaznaczonych faktur (tekst, z przecinkiem)
   const [selected, setSelected] = useState<Record<string, string>>({});
   const [filter, setFilter] = useState('');
+  const [showSettled, setShowSettled] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -79,15 +80,18 @@ const BankAllocate = () => {
   const allocatedMicros = Object.values(selected).reduce((sum, value) => sum + (toMicros(value) ?? 0), 0);
   const leftMicros = (transaction?.amount.amountMicros ?? 0) - allocatedMicros;
 
+  // faktury już rozliczone (status Zapłacona albo nic do zapłaty) chowamy, dopóki ich nie szukasz albo nie włączysz
+  const isSettled = (c: Candidate) => c.alreadyPaid || c.remainingMicros <= 0;
+  const settledCount = (context?.candidates ?? []).filter((c) => isSettled(c) && selected[c.id] === undefined).length;
+
   const visible = useMemo(() => {
     const query = filter.trim().toLowerCase();
-    return (context?.candidates ?? []).filter(
-      (c) =>
-        !query ||
-        selected[c.id] !== undefined ||
-        `${c.name ?? ''} ${c.counterpartyName ?? ''}`.toLowerCase().includes(query),
-    );
-  }, [context, filter, selected]);
+    return (context?.candidates ?? []).filter((c) => {
+      if (selected[c.id] !== undefined) return true;
+      const matches = !query || `${c.name ?? ''} ${c.counterpartyName ?? ''}`.toLowerCase().includes(query);
+      return matches && (showSettled || !!query || !isSettled(c));
+    });
+  }, [context, filter, selected, showSettled]);
 
   const toggle = (candidate: Candidate) =>
     setSelected((current) => {
@@ -200,9 +204,21 @@ const BankAllocate = () => {
         />
       )}
 
+      {transaction && settledCount > 0 && (
+        <label style={{ ...muted, display: 'flex', alignItems: 'center', gap: theme.spacing[2], cursor: 'pointer' }}>
+          <input type="checkbox" checked={showSettled} onChange={(e) => setShowSettled(e.target.checked)} />
+          Pokaż faktury już zapłacone ({settledCount})
+        </label>
+      )}
+
       {transaction && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing[2] }}>
-          {visible.length === 0 && <div style={muted}>Brak otwartych faktur pasujących do transakcji.</div>}
+          {visible.length === 0 && (
+            <div style={muted}>
+              Brak otwartych faktur pasujących do transakcji.
+              {settledCount > 0 && !showSettled ? ' Zaznacz „Pokaż faktury już zapłacone” albo wyszukaj numer.' : ''}
+            </div>
+          )}
           {visible.map((c) => {
             const checked = selected[c.id] !== undefined;
             return (
