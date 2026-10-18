@@ -234,7 +234,7 @@ export default defineObject({
       name: 'paymentStatus',
       type: FieldType.SELECT,
       label: 'Status płatności',
-      description: 'Startowo z XML (zapłacono przy wystawieniu); dalej ręcznie albo z wyciągów bankowych.',
+      description: 'Import zawsze ustawia Niezapłacona; zapłatę oznacza wyciąg bankowy albo zmiana ręczna.',
       icon: 'IconCash',
       options: [...PAYMENT_STATUS_OPTIONS],
       defaultValue: `'${PAYMENT_STATUS.UNPAID}'`,

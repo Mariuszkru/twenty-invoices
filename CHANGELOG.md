@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## Unreleased
+
+- Import no longer sets the payment status from the FA(3) XML (`Zaplacono`, `ZnacznikZaplatyCzesciowej`); every imported invoice stays `UNPAID` until a bank statement or a manual change marks it paid
+
 ## 0.3.1
 
 - Disable link previews in Rocket.Chat messages (`parseUrls: false`)

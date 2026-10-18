@@ -1,4 +1,4 @@
-import { PAYMENT_STATUS, SYNC_STATUS } from 'src/constants/options';
+import { SYNC_STATUS } from 'src/constants/options';
 import { sumMicros } from 'src/lib/decimal';
 import { parseFa3 } from 'src/lib/ksef/fa3-parser';
 import { resolveDueDate } from 'src/lib/ksef/fa3-payment';
@@ -70,26 +70,9 @@ export const importInvoiceDetails = async (
     receivedDate: invoice.permanentStorageDate?.slice(0, 10) ?? null,
   });
 
-  // Status płatności z XML tylko podnosimy (zapłacono przy wystawieniu); nigdy nie cofamy statusu
-  // ustawionego ręcznie albo z wyciągu bankowego.
-  const xmlStatus = payment.paidInFull
-    ? PAYMENT_STATUS.PAID
-    : payment.partialPaidMicros
-      ? PAYMENT_STATUS.PARTIAL
-      : null;
-  const paymentUpdate: InvoiceUpdate =
-    xmlStatus && invoice.paymentStatus !== PAYMENT_STATUS.PAID
-      ? {
-          paymentStatus: xmlStatus,
-          paidAt: payment.paidAt,
-          paidAmount:
-            xmlStatus === PAYMENT_STATUS.PAID && invoice.grossAmount
-              ? invoice.grossAmount
-              : payment.partialPaidMicros !== null
-                ? { amountMicros: payment.partialPaidMicros, currencyCode: currency }
-                : null,
-        }
-      : {};
+  // Statusu płatności nie bierzemy z XML (Zaplacono/ZnacznikZaplatyCzesciowej): faktura bywa
+  // opłacona z prywatnych pieniędzy i zwracana później, więc o zapłacie decyduje wyłącznie wyciąg
+  // bankowy (albo ręczna zmiana). Import zostawia domyślne UNPAID i nie nadpisuje istniejącego statusu.
 
   const update: InvoiceUpdate = {
     saleDate: parsed.saleDate,
@@ -105,7 +88,6 @@ export const importInvoiceDetails = async (
     paymentMethod: payment.method,
     bankAccount: payment.bankAccount,
     ksefPaymentId: payment.ksefPaymentId,
-    ...paymentUpdate,
     syncStatus: SYNC_STATUS.COMPLETE,
     ...(options.uploadXml ? { syncError: xmlError } : {}),
   };

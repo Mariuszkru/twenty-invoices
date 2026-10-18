@@ -64,6 +64,22 @@ describe('reprocessStoredXml', () => {
     expect(bLines[0].netAmount?.amountMicros).toBe(1_910_560_000);
   });
 
+  it('znacznik zapłaty w XML nie oznacza faktury jako zapłaconej', async () => {
+    const memory = await seed();
+    const paidXml = fixture('fa3-vat-pln.xml').replace(
+      '<Platnosc>',
+      '<Platnosc><Zaplacono>1</Zaplacono><DataZaplaty>2026-10-01</DataZaplaty>',
+    );
+    const deps = { store: memory.store, nbpRate: async () => null, readXml: async () => paidXml };
+
+    await reprocessStoredXml(deps, { after: null, limit: 1 });
+
+    const [a] = memory.invoices;
+    expect(a.paymentStatus).toBe('UNPAID');
+    expect(a.paidAt ?? null).toBeNull();
+    expect(a.paidAmount ?? null).toBeNull();
+  });
+
   it('błąd odczytu XML zapisuje komunikat i nie przerywa reszty', async () => {
     const memory = await seed();
     const deps = {
