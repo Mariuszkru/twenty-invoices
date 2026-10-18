@@ -29,6 +29,36 @@ describe('matchTransaction', () => {
     expect(matchTransaction(tx({ remittanceInformation: 'FAKTURA NR26/FAAELE/009722' }), invoices).allocations).toHaveLength(1);
   });
 
+  it('długi numer zaczynający się literą trafia mimo doklejonego prefiksu ("FVSM26-…") i składa przelew zbiorczy', () => {
+    const invoices = [
+      openInvoice({ id: 'allegro', name: 'SM26-2206292078', direction: 'PURCHASE', grossAmount: PLN(59.9) }),
+      openInvoice({ id: 'elhurt', name: 'F/4768/09/26', direction: 'PURCHASE', grossAmount: PLN(94.67) }),
+    ];
+    const result = matchTransaction(
+      tx({ direction: 'DEBIT', amount: PLN(154.57), remittanceInformation: 'ZWROT PONIESIONYCH KOSZTÓW FVSM26-2206292078, F/4768/09/26 TRANSFER' }),
+      invoices,
+    );
+    expect(result.allocations.map((a) => [a.invoiceId, a.amountMicros])).toEqual([
+      ['allegro', 59_900_000],
+      ['elhurt', 94_670_000],
+    ]);
+  });
+
+  it('krótki numer zaczynający się literą nadal wymaga granicy przed sobą', () => {
+    const invoices = [openInvoice({ id: 'a', name: 'FS 12', counterpartyName: 'X' })];
+    expect(matchTransaction(tx({ remittanceInformation: 'XFS 12' }), invoices).allocations).toEqual([]);
+  });
+
+  it('przelew większy niż jedyna rozpoznana faktura rozlicza tylko jej kwotę', () => {
+    const result = matchTransaction(tx({ amount: PLN(1500), remittanceInformation: 'FV/10/2026/001 i coś jeszcze' }), [
+      openInvoice({ id: 'a' }),
+    ]);
+    expect(result).toEqual({
+      allocations: [{ invoiceId: 'a', invoiceName: 'FV/10/2026/001', amountMicros: 1_230_000_000 }],
+      note: 'W tytule numer faktury FV/10/2026/001, nierozliczone 270.00',
+    });
+  });
+
   it('nie myli 1/2026 z 11/2026', () => {
     const invoices = [openInvoice({ id: 'a', name: 'FS 1/2026' }), openInvoice({ id: 'b', name: 'FS 11/2026' })];
     expect(matchTransaction(tx({ remittanceInformation: 'FS 11/2026' }), invoices).allocations.map((a) => a.invoiceId)).toEqual(['b']);

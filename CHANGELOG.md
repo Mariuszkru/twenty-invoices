@@ -2,6 +2,12 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.7.5
+
+- A long invoice number starting with a letter (8+ characters, e.g. "SM26-2206292078") also matches when the bank glues letters in front of it ("FVSM26-…"), so such collective refunds split correctly
+- A transfer larger than the only recognised invoice allocates just the invoice amount and notes the rest as unallocated, instead of recording an overpayment on the invoice
+- "Pobierz teraz" runs the statement fetch immediately and shows the result; queued jobs could use a stale GraphQL schema right after a deploy
+
 ## 0.7.4
 
 - Invoices already marked paid stay visible in the "Rozlicz przelew" panel when their amount not yet allocated from the bank equals the transaction amount

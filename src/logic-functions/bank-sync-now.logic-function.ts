@@ -1,24 +1,24 @@
 import { defineLogicFunction } from 'twenty-sdk/define';
-import { enqueueJobs } from 'twenty-sdk/logic-function';
 
 import { ID } from 'src/constants/ids';
-import { readBankConfig } from 'src/lib/bank/bank-from-env';
+import { bankSyncFromEnv } from 'src/lib/bank/bank-from-env';
 
 // Ręczne pobranie wyciągu z panelu połączenia z bankiem. Liczy się do dziennego limitu zapytań PSD2 (ok. 4 na rachunek).
+// Przebieg trwa kilka sekund, więc uruchamiamy go od razu: zadanie z kolejki potrafiło po wdrożeniu korzystać
+// z nieaktualnego schematu GraphQL (brak nowego obiektu), a bezpośrednie wywołanie nie.
 export default defineLogicFunction({
   universalIdentifier: ID.fnBankSyncNow,
   name: 'bank-sync-now',
-  description: 'Kolejkuje natychmiastowe pobranie wyciągu bankowego.',
-  timeoutSeconds: 10,
+  description: 'Pobiera wyciąg bankowy od razu (ręczne uruchomienie z panelu).',
+  timeoutSeconds: 120,
   httpRouteTriggerSettings: {
     path: '/bank/sync',
     httpMethod: 'POST',
     isAuthRequired: true,
   },
   handler: async () => {
-    const config = readBankConfig();
-    if ('error' in config) return { ok: false, message: config.error };
-    await enqueueJobs({ logicFunctionUniversalIdentifier: ID.fnBankSync, jobs: [{ payload: {} }] });
-    return { ok: true, queued: true };
+    const result = await bankSyncFromEnv();
+    console.log(`[bank-sync-now] ${JSON.stringify(result)}`);
+    return result;
   },
 });

@@ -49,9 +49,12 @@ const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&
 
 // Numer faktury w tytule przelewu: separatory (/ - _ . spacja) są opcjonalne, a numer musi stać osobno.
 // Granica numeru: po cyfrze nie może stać cyfra, po literze ani litera, ani cyfra. Dzięki temu "NR26/FAAELE/009722"
-// (bank skleja tytuł) trafia w "26/FAAELE/009722", a "11/2026" nadal nie trafia w "1/2026".
+// (bank skleja tytuł) trafia w "26/FAAELE/009722", a "11/2026" nadal nie trafia w "1/2026". Długi numer zaczynający
+// się literą (co najmniej 8 znaków, np. "SM26-2206292078") może mieć doklejone litery przed sobą ("FVSM26-…").
+const LONG_NUMBER_LENGTH = 8;
 const partsPattern = (parts: string[]) => {
-  const before = /^\d/.test(parts[0]) ? '(?<![0-9])' : '(?<![A-Z0-9])';
+  const longLetterStart = /^[A-Z]/.test(parts[0]) && parts.join('').length >= LONG_NUMBER_LENGTH;
+  const before = /^\d/.test(parts[0]) || longLetterStart ? '(?<![0-9])' : '(?<![A-Z0-9])';
   const after = /\d$/.test(parts[parts.length - 1]) ? '(?![0-9])' : '(?![A-Z0-9])';
   return new RegExp(`${before}${parts.map(escapeRegExp).join('[\\s/\\\\\\-_.]*')}${after}`);
 };
@@ -131,13 +134,20 @@ export const matchTransaction = (tx: MatchableTransaction, invoices: OpenInvoice
   if (numberHit.length === 1) {
     const { invoice, reason } = numberHit[0];
     const remaining = remainingMicros(invoice);
-    const amountNote =
+    const note = `W tytule ${reason} ${invoice.name ?? ''}`.trim();
+    if (tx.amount.amountMicros - AMOUNT_TOLERANCE_MICROS > remaining) {
+      // przelew większy niż faktura: rozliczamy tylko jej kwotę, reszta zostaje do ręcznego rozliczenia
+      // (zwykle w tytule jest jeszcze numer, którego nie rozpoznaliśmy)
+      return {
+        allocations: [{ invoiceId: invoice.id, invoiceName: invoice.name, amountMicros: remaining }],
+        note: `${note}, nierozliczone ${formatAmount(tx.amount.amountMicros - remaining)}`,
+      };
+    }
+    const partial =
       tx.amount.amountMicros + AMOUNT_TOLERANCE_MICROS < remaining
         ? `, wpłata częściowa (pozostało ${formatAmount(remaining - tx.amount.amountMicros)})`
-        : tx.amount.amountMicros - AMOUNT_TOLERANCE_MICROS > remaining
-          ? `, nadpłata ${formatAmount(tx.amount.amountMicros - remaining)}`
-          : '';
-    return single(tx, invoice, `W tytule ${reason} ${invoice.name ?? ''}`.trim() + amountNote);
+        : '';
+    return single(tx, invoice, note + partial);
   }
   // przelew zbiorczy: kilka numerów w tytule, a suma pozostałych kwot tych faktur równa kwocie przelewu
   if (byNumber.length > 1) {

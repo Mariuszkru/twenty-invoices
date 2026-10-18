@@ -75,9 +75,16 @@ const BankConnect = () => {
     setBusy('sync');
     setError(null);
     try {
-      const result = await new RestApiClient().post<{ ok: boolean; message?: string }>('/s/bank/sync', {});
-      if (!result.ok) setError(result.message ?? 'Nie udało się uruchomić pobierania.');
-      else await enqueueSnackbar({ message: 'Pobieranie wyciągu uruchomione. Wynik pojawi się za chwilę.', variant: 'success' });
+      const result = await new RestApiClient().post<Partial<LastRun> & { ok: boolean; message?: string }>('/s/bank/sync', {});
+      if (!result.ok) {
+        setError(result.message ?? 'Nie udało się pobrać wyciągu.');
+      } else {
+        await enqueueSnackbar({
+          message: `Wyciąg pobrany: nowe ${result.created ?? 0}, dopasowane ${result.matched ?? 0}, nieprzypisane ${result.unmatched ?? 0}.`,
+          variant: 'success',
+        });
+      }
+      await loadStatus();
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
