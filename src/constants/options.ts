@@ -34,6 +34,17 @@ export const SYNC_STATUS_OPTIONS = [
   { value: SYNC_STATUS.ERROR, label: 'Błąd', position: 2, color: 'red' },
 ] as const;
 
+// Skąd pochodzi faktura: KSeF albo ręczny import XML z programu księgowego (faktury B2C spoza KSeF).
+export const SOURCE = { KSEF: 'KSEF', ENOVA: 'ENOVA', SYMFONIA: 'SYMFONIA' } as const;
+export type Source = (typeof SOURCE)[keyof typeof SOURCE];
+export const MANUAL_SOURCES = [SOURCE.ENOVA, SOURCE.SYMFONIA];
+
+export const SOURCE_OPTIONS = [
+  { value: SOURCE.KSEF, label: 'KSeF', position: 0, color: 'blue' },
+  { value: SOURCE.ENOVA, label: 'Import XML (enova)', position: 1, color: 'purple' },
+  { value: SOURCE.SYMFONIA, label: 'Import Symfonia', position: 2, color: 'turquoise' },
+] as const;
+
 export const PAYMENT_STATUS = { UNPAID: 'UNPAID', PARTIAL: 'PARTIAL', PAID: 'PAID' } as const;
 export type PaymentStatus = (typeof PAYMENT_STATUS)[keyof typeof PAYMENT_STATUS];
 

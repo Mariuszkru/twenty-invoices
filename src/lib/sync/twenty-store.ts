@@ -2,7 +2,7 @@ import { CoreApiClient } from 'twenty-client-sdk/core';
 import { MetadataApiClient } from 'twenty-client-sdk/metadata';
 
 import { ID } from 'src/constants/ids';
-import { DIRECTION, PAYMENT_STATUS, SYNC_STATUS } from 'src/constants/options';
+import { DIRECTION, MANUAL_SOURCES, PAYMENT_STATUS, SOURCE, SYNC_STATUS } from 'src/constants/options';
 import type { InvoiceSummary } from 'src/lib/notify/messages';
 import type { InvoiceStore, PendingInvoice } from 'src/lib/sync/store';
 
@@ -15,6 +15,9 @@ const chunks = <T>(items: T[], size = CHUNK): T[][] =>
   );
 
 type Edges<T> = { edges: { node: T }[] };
+
+// ilike bez symboli wieloznacznych = porównanie dokładne bez rozróżniania wielkości liter.
+const exactLike = (value: string) => value.replace(/[\\%_]/g, (c) => `\\${c}`);
 
 const PENDING_INVOICE_SELECTION = {
   id: true,
@@ -86,7 +89,11 @@ export const createTwentyStore = (): InvoiceStore => {
       const result = await client.query({
         ksefInvoices: {
           __args: {
-            filter: { syncStatus: { eq: SYNC_STATUS.COMPLETE } },
+            // faktury z ręcznego importu nie mają XML FA(3) ani numeru KSeF – nie wolno ich cofać do PENDING
+            filter: {
+              syncStatus: { eq: SYNC_STATUS.COMPLETE },
+              or: [{ source: { is: 'NULL' } }, { source: { eq: SOURCE.KSEF } }],
+            },
             orderBy: [{ permanentStorageDate: 'AscNullsLast' }],
             first: limit,
             ...(after ? { after } : {}),
@@ -177,6 +184,59 @@ export const createTwentyStore = (): InvoiceStore => {
         lines += (result.updateKsefInvoiceLines as unknown[]).length;
       }
       return { invoices: invoiceIds.length, lines };
+    },
+
+    findManualInvoiceIds: async (numbers) => {
+      const map = new Map<string, string>();
+      for (const part of chunks(numbers, 200)) {
+        const result = await client.query({
+          ksefInvoices: {
+            __args: { filter: { source: { in: MANUAL_SOURCES }, name: { in: part } }, first: 200 },
+            edges: { node: { id: true, name: true } },
+          },
+        });
+        for (const { node } of (result.ksefInvoices as Edges<{ id: string; name: string }>).edges) {
+          map.set(node.name, node.id);
+        }
+      }
+      return map;
+    },
+
+    createManualInvoice: async (record) => {
+      const result = await client.mutation({ createKsefInvoice: { __args: { data: record }, id: true } });
+      return (result.createKsefInvoice as { id: string }).id;
+    },
+
+    updateManualInvoice: async (id, data) => {
+      await client.mutation({ updateKsefInvoice: { __args: { id, data }, id: true } });
+    },
+
+    findPersonIdsByEmail: async (email) => {
+      const result = await client.query({
+        people: {
+          __args: { filter: { emails: { primaryEmail: { ilike: exactLike(email) } } }, first: 10 },
+          edges: { node: { id: true } },
+        },
+      });
+      return (result.people as Edges<{ id: string }>).edges.map((e) => e.node.id);
+    },
+
+    findPersonIdsByName: async (names) => {
+      if (names.length === 0) return [];
+      const result = await client.query({
+        people: {
+          __args: {
+            filter: {
+              or: names.map((n) => ({
+                name: { firstName: { ilike: exactLike(n.firstName) }, lastName: { ilike: exactLike(n.lastName) } },
+              })),
+            },
+            first: 10,
+          },
+          edges: { node: { id: true } },
+        },
+      });
+      return (result.people as Edges<{ id: string }>).edges.map((e) => e.node.id);
     },
 
     findUnpaidDueOn: async (dates) => {

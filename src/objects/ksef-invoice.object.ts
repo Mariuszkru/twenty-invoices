@@ -15,6 +15,8 @@ import {
   PAYMENT_METHOD_OPTIONS,
   PAYMENT_STATUS,
   PAYMENT_STATUS_OPTIONS,
+  SOURCE,
+  SOURCE_OPTIONS,
   SYNC_STATUS,
   SYNC_STATUS_OPTIONS,
 } from 'src/constants/options';
@@ -26,7 +28,7 @@ export default defineObject({
   namePlural: 'ksefInvoices',
   labelSingular: 'Faktura KSeF',
   labelPlural: 'Faktury KSeF',
-  description: 'Faktura sprzedaży lub zakupu pobrana z KSeF.',
+  description: 'Faktura sprzedaży lub zakupu pobrana z KSeF albo zaimportowana z XML programu księgowego.',
   icon: 'IconFileInvoice',
   fields: [
     {
@@ -174,6 +176,32 @@ export default defineObject({
         relationType: RelationType.MANY_TO_ONE,
         onDelete: OnDeleteAction.SET_NULL,
         joinColumnName: 'companyId',
+      },
+    },
+    {
+      universalIdentifier: ID.invSource,
+      name: 'source',
+      type: FieldType.SELECT,
+      label: 'Źródło',
+      description: 'KSeF albo ręczny import z programu księgowego (faktury B2C spoza KSeF).',
+      icon: 'IconFileImport',
+      options: [...SOURCE_OPTIONS],
+      defaultValue: `'${SOURCE.KSEF}'`,
+    },
+    {
+      universalIdentifier: ID.invPerson,
+      name: 'person',
+      type: FieldType.RELATION,
+      label: 'Osoba',
+      description: 'Nabywca faktury B2C (konsument) dopasowany do osoby w CRM.',
+      icon: 'IconUser',
+      relationTargetObjectMetadataUniversalIdentifier:
+        STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS.person.universalIdentifier,
+      relationTargetFieldMetadataUniversalIdentifier: ID.personKsefInvoices,
+      universalSettings: {
+        relationType: RelationType.MANY_TO_ONE,
+        onDelete: OnDeleteAction.SET_NULL,
+        joinColumnName: 'personId',
       },
     },
     {

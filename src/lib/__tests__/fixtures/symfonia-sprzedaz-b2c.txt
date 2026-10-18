@@ -1,0 +1,512 @@
+
+		INFO{
+			 Nazwa programu  =Systim
+			 Wersja_programu =1.0
+			 Wersja szablonu =3.1
+			 dane_z_oddzialu =1
+			 Kontrahent{
+				id =1
+				kod =Sprzedawca sp. z o.o.
+				nazwa =SPRZEDAWCA SPÓ£KA Z OGRANICZON¥ ODPOWIEDZIALNOŒCI¥
+				miejscowosc =Gdañsk
+				ulica =ul. Morska 3
+				dom =
+				lokal =
+				kodpocz =80-001
+				nip =1111111111
+				statusUE =0
+			 }
+			} 
+
+				Kontrahent{
+					   id =210
+					   kod =Jan Kowalski
+					   nazwa =Jan Kowalski
+					   miejscowosc =£ódŸ
+					   ulica =ul. Testowa 1
+					   dom =
+					   lokal =
+					   kodpocz =90-001
+					   nip =
+					   statusUE =0
+			}
+			Dokument{
+				anulowany =0
+				rodzaj_dok =sprzeda¿y
+				metoda_VAT =0
+				dozaplaty =3250
+				wdozaplaty =3250
+			 	Rozrachunek{
+					kwota =3250
+					wkwota =3250
+					waluta =
+					kurs =1.000000000000
+				}
+				Notatka_Dl{
+					opis =
+				}
+				kodKH =
+				kodOdKH =
+				kodMag =MAG
+				id =306
+				flag =-30720
+				subtypi =40
+				typi =0
+				znaczniki =0
+				rodzaj =3300
+				katalog =2300
+				info =N
+				osoba =Admin
+				kod =FV 26/07/2026
+				seria =sFVS
+				serianr =1
+				okres =32016
+				nazwa =Faktura VAT
+				data =2026-07-21
+				datasp =2026-07-21
+				opis =
+				khid =210
+				khkod =
+				khnazwa =Jan Kowalski
+				khadres =ul. Testowa 1
+				khdom =
+				khlokal =
+				khmiasto =£ódŸ
+				khkodpocz =90-001
+				khnip =
+				idkraju =5801
+				odid =
+				odkod =
+				odnazwa =
+				odadres =
+				oddom =
+				odlokal =
+				odmiasto =
+				odkodpocz =
+				ok =0
+				puste =0
+				wplaty =0.000000000000
+				rabat =0.000000000000
+				plattypi =131
+				plattermin =2026-07-28
+				netto =3009.26
+				vat =240.74
+				odebrane =
+				d =FVS
+				grupaceni =
+				rejestrvati =1
+				iddokkoryg =0
+				wartoscsp =0.000000000000
+				idkorekt =0
+				exp_fki =16
+				waluta =
+				kurs =1.000000000000
+				zyskdod =3009.26
+				paragon =0
+				kod_obcy =
+				magazyn =
+				rozlmgi =1
+				dzial =0
+				formaplatn =65919
+				schemat =SMP
+				datarej =
+				datawp =
+				walnetto =3009.26
+				walbrutto =3250
+				wartprzychod =3009.26
+				kursdoch =1.000000000000
+				oki =0
+				domyœlny rabat =0.00
+				rejestr_vat =rSPV
+				nazwa_rejestru_vat =Sprzeda¿ VAT
+				typ_rejestru_vat =1
+				rejestr_platnosci =BANK
+				forma_platnosci =1
+				khKrajKod =PL
+				khKrajNazwa =Polska
+				Dane nabywcy{
+					khid =210
+					fk_ident =2
+					khkod =
+					khnazwa =Jan Kowalski
+					khadres =ul. Testowa 1
+					khdom =
+					khlokal =
+					khmiasto =£ódŸ
+					khkodpocz =90-001
+					khnip =
+					khKrajKod =PL
+					khKrajNazwa =Polska
+				}
+				Dane odbiorcy{
+					odid =
+					odkod =
+					odnazwa =Jan Kowalski
+					odadres =ul. Testowa 1
+					oddom =
+					odlokal =
+					odmiasto =£ódŸ
+					odkodpocz =90-001
+				}
+				kwota =3250
+				symbol FK =FVS
+				obsluguj jak =FVS
+				NazwaKor =FVS
+				DataKor =
+				NazwaKatalogu =\@Dokumenty sprzeda¿y
+				NazwaRodzaju =Dokumenty sprzeda¿y
+				JPK_V7 =
+				Pozycja dokumentu{
+							kodTW =
+							kodKH =
+							kodMag =MAG
+							id =
+							flag =-32256
+							subtypi =0
+							typi =74
+							super =65663
+							lp =0
+							idkh =65556
+							idtw =65550
+							kod =
+							data =
+							opis =Monta¿ klimatyzacji rotenso teta w domu jednorodzinnym
+							opisdod =
+							ilosc =1.0000
+							jm =szt.
+							stvati =3
+							grupaceni =
+							cenabaza =3250.0000
+							waluta =
+							cenabazapl =3250.0000
+							cena =3250.0000
+							wartnetto =3009.26
+							wartvat =240.74
+							warttowaru =0.000000000000
+							idpozkoryg =0
+							cenabaztow =
+							walcenybaz =
+							rejestrvati =1
+							idlongname =0
+							wartstvat =800
+							zyskdod =
+							iloscjedn =0.000000000000
+							osoba =Admin
+							iloscwp =1.0000
+							idhandl =0
+							rezerwacja =0
+							iloscdorozl =1.0000
+							rozlhandl =0.000000000000
+							magazyn =
+							cenawal =3250.0000
+							schemat =
+							datarej =
+							jmwp =szt.
+							kosztmarzy =0.000000000000
+							walnetto =3009.26
+							walbrutto =3250.00
+							wartprzychod =3009.26
+							rejestr_vat =rSPV
+							nazwa_rejestru_vat =Sprzeda¿ VAT
+							typ_rejestru_vat =1
+							SWW/KWiU =
+							typ_pozycji =0
+						}
+				FK nazwa =FV 26/07/2026
+				Datawpl =
+				opis FK =Monta¿ klimatyzacji rotenso teta w domu jednorodzinnym
+				kurs =1.000000000000
+				waluta =
+				wkwota =3250
+				kwota =3250
+						Zapis{
+							strona =WN
+							kwota =3250
+							konto =
+							IdDlaRozliczen =1
+							opis =Monta¿ klimatyzacji rotenso teta w domu jednorodzinnym
+							NumerDok =FV 26/07/2026
+							Pozycja =0
+							ZapisRownolegly =0
+						}
+						Zapis{
+							strona =MA
+							kwota =3009.26
+							konto =
+							IdDlaRozliczen =2
+							opis =Monta¿ klimatyzacji rotenso teta w domu jednorodzinnym
+							NumerDok =FV 26/07/2026
+							Pozycja =0
+							ZapisRownolegly =0
+						}
+						Zapis{
+							strona =MA
+							kwota =240.74
+							konto =
+							IdDlaRozliczen =3
+							opis =Monta¿ klimatyzacji rotenso teta w domu jednorodzinnym
+							NumerDok =FV 26/07/2026
+							Pozycja =0
+							ZapisRownolegly =0
+						}
+			Rejestr{
+					Skrot =rSPV
+					Nazwa =Sprzeda¿ VAT
+					Rodzaj =1
+					ABC =1
+					metoda_VAT =0
+					datarej =2026-07-21
+					okres =VII
+					stawka =8
+					brutto =3250
+					netto =3009.26
+					vat =240.74
+					JPK_V7 =
+					}
+}
+				Kontrahent{
+					   id =209
+					   kod =Zofia W¹sowska
+					   nazwa =Zofia W¹sowska
+					   miejscowosc =Kraków
+					   ulica =Przyk³adowa 2
+					   dom =
+					   lokal =
+					   kodpocz =30-001
+					   nip =
+					   statusUE =0
+			}
+			Dokument{
+				anulowany =0
+				rodzaj_dok =sprzeda¿y
+				metoda_VAT =0
+				dozaplaty =14500
+				wdozaplaty =14500
+			 	Rozrachunek{
+					kwota =14500
+					wkwota =14500
+					waluta =
+					kurs =1.000000000000
+				}
+				Notatka_Dl{
+					opis =
+				}
+				kodKH =
+				kodOdKH =
+				kodMag =MAG
+				id =310
+				flag =-30720
+				subtypi =40
+				typi =0
+				znaczniki =0
+				rodzaj =3300
+				katalog =2300
+				info =N
+				osoba =Admin
+				kod =FVZ 3/07/2026
+				seria =sFVS
+				serianr =1
+				okres =32016
+				nazwa =Faktura VAT
+				data =2026-07-29
+				datasp =2026-07-23
+				opis =
+				khid =209
+				khkod =
+				khnazwa =Zofia W¹sowska
+				khadres =Przyk³adowa 2
+				khdom =
+				khlokal =
+				khmiasto =Kraków
+				khkodpocz =30-001
+				khnip =
+				idkraju =5801
+				odid =
+				odkod =
+				odnazwa =
+				odadres =
+				oddom =
+				odlokal =
+				odmiasto =
+				odkodpocz =
+				ok =0
+				puste =0
+				wplaty =0.000000000000
+				rabat =0.000000000000
+				plattypi =131
+				plattermin =2026-07-29
+				netto =13425.93
+				vat =1074.07
+				odebrane =
+				d =FVS
+				grupaceni =
+				rejestrvati =1
+				iddokkoryg =0
+				wartoscsp =0.000000000000
+				idkorekt =0
+				exp_fki =16
+				waluta =
+				kurs =1.000000000000
+				zyskdod =13425.93
+				paragon =0
+				kod_obcy =
+				magazyn =
+				rozlmgi =1
+				dzial =0
+				formaplatn =65919
+				schemat =SMP
+				datarej =
+				datawp =
+				walnetto =13425.93
+				walbrutto =14500
+				wartprzychod =13425.93
+				kursdoch =1.000000000000
+				oki =0
+				domyœlny rabat =0.00
+				rejestr_vat =rSPV
+				nazwa_rejestru_vat =Sprzeda¿ VAT
+				typ_rejestru_vat =1
+				rejestr_platnosci =BANK
+				forma_platnosci =1
+				khKrajKod =PL
+				khKrajNazwa =Polska
+				Dane nabywcy{
+					khid =209
+					fk_ident =2
+					khkod =
+					khnazwa =Zofia W¹sowska
+					khadres =Przyk³adowa 2
+					khdom =
+					khlokal =
+					khmiasto =Kraków
+					khkodpocz =30-001
+					khnip =
+					khKrajKod =PL
+					khKrajNazwa =Polska
+				}
+				Dane odbiorcy{
+					odid =
+					odkod =
+					odnazwa =Zofia W¹sowska
+					odadres =Przyk³adowa 2
+					oddom =
+					odlokal =
+					odmiasto =Kraków
+					odkodpocz =30-001
+				}
+				kwota =14500
+				symbol FK =FVS
+				obsluguj jak =FVS
+				NazwaKor =FVS
+				DataKor =
+				NazwaKatalogu =\@Dokumenty sprzeda¿y
+				NazwaRodzaju =Dokumenty sprzeda¿y
+				JPK_V7 =
+				Pozycja dokumentu{
+							kodTW =
+							kodKH =
+							kodMag =MAG
+							id =
+							flag =-32256
+							subtypi =0
+							typi =74
+							super =65663
+							lp =0
+							idkh =65556
+							idtw =65550
+							kod =
+							data =
+							opis =Monta¿ klimatyzacji Rotenso Teta 7kW + 2,6kW
+							opisdod =
+							ilosc =1.0000
+							jm =szt.
+							stvati =3
+							grupaceni =
+							cenabaza =14500.0000
+							waluta =
+							cenabazapl =14500.0000
+							cena =14500.0000
+							wartnetto =13425.93
+							wartvat =1074.07
+							warttowaru =0.000000000000
+							idpozkoryg =0
+							cenabaztow =
+							walcenybaz =
+							rejestrvati =1
+							idlongname =0
+							wartstvat =800
+							zyskdod =
+							iloscjedn =0.000000000000
+							osoba =Admin
+							iloscwp =1.0000
+							idhandl =0
+							rezerwacja =0
+							iloscdorozl =1.0000
+							rozlhandl =0.000000000000
+							magazyn =
+							cenawal =14500.0000
+							schemat =
+							datarej =
+							jmwp =szt.
+							kosztmarzy =0.000000000000
+							walnetto =13425.93
+							walbrutto =14500.00
+							wartprzychod =13425.93
+							rejestr_vat =rSPV
+							nazwa_rejestru_vat =Sprzeda¿ VAT
+							typ_rejestru_vat =1
+							SWW/KWiU =
+							typ_pozycji =0
+						}
+				FK nazwa =FVZ 3/07/2026
+				Datawpl =
+				opis FK =Monta¿ klimatyzacji Rotenso Teta 7kW + 2,6kW
+				kurs =1.000000000000
+				waluta =
+				wkwota =14500
+				kwota =14500
+						Zapis{
+							strona =WN
+							kwota =14500
+							konto =
+							IdDlaRozliczen =1
+							opis =Monta¿ klimatyzacji Rotenso Teta 7kW + 2,6kW
+							NumerDok =FVZ 3/07/2026
+							Pozycja =0
+							ZapisRownolegly =0
+						}
+						Zapis{
+							strona =MA
+							kwota =13425.93
+							konto =
+							IdDlaRozliczen =2
+							opis =Monta¿ klimatyzacji Rotenso Teta 7kW + 2,6kW
+							NumerDok =FVZ 3/07/2026
+							Pozycja =0
+							ZapisRownolegly =0
+						}
+						Zapis{
+							strona =MA
+							kwota =1074.07
+							konto =
+							IdDlaRozliczen =3
+							opis =Monta¿ klimatyzacji Rotenso Teta 7kW + 2,6kW
+							NumerDok =FVZ 3/07/2026
+							Pozycja =0
+							ZapisRownolegly =0
+						}
+			Rejestr{
+					Skrot =rSPV
+					Nazwa =Sprzeda¿ VAT
+					Rodzaj =1
+					ABC =1
+					metoda_VAT =0
+					datarej =2026-07-29
+					okres =VII
+					stawka =8
+					brutto =14500
+					netto =13425.93
+					vat =1074.07
+					JPK_V7 =
+					}
+}

@@ -1,4 +1,5 @@
 import { PAYMENT_STATUS } from 'src/constants/options';
+import type { ManualInvoiceRecord } from 'src/lib/manual/import-manual';
 import type { InvoiceSummary } from 'src/lib/notify/messages';
 import type { InvoiceRecord, LineRecord } from 'src/lib/sync/mapping';
 import type { KvStore } from 'src/lib/sync/rate-budget';
@@ -32,8 +33,14 @@ const toSummary = (i: StoredInvoice): InvoiceSummary => ({
 export const createMemoryStore = () => {
   const invoices: StoredInvoice[] = [];
   const lines: LineRecord[] = [];
+  const manualInvoices: (ManualInvoiceRecord & InvoiceUpdate & { id: string })[] = [];
   const files = new Map<string, string>();
   const companies = new Map([['7740001454', 'company-dostawca']]);
+  const people: { id: string; firstName: string; lastName: string; email: string | null }[] = [
+    { id: 'person-jan', firstName: 'Jan', lastName: 'Kowalski', email: 'jan@example.com' },
+    { id: 'person-anna-1', firstName: 'Anna', lastName: 'Nowak', email: null },
+    { id: 'person-anna-2', firstName: 'Anna', lastName: 'Nowak', email: 'anna@example.com' },
+  ];
   const byStorageDate = (a: StoredInvoice, b: StoredInvoice) =>
     a.permanentStorageDate.localeCompare(b.permanentStorageDate);
 
@@ -66,12 +73,34 @@ export const createMemoryStore = () => {
       lines.push(...newLines);
     },
     updateInvoice: async (id, data) => {
-      Object.assign(invoices.find((i) => i.id === id)!, data);
+      Object.assign([...invoices, ...manualInvoices].find((i) => i.id === id)!, data);
     },
     findInvoiceIdByKsefNumber: async (n) => invoices.find((i) => i.ksefNumber === n)?.id ?? null,
     findCompanyIdsByNip: async (nips) =>
       new Map(nips.filter((n) => companies.has(n)).map((n) => [n, companies.get(n)!])),
     linkCompanyByNip: async () => ({ invoices: 0, lines: 0 }),
+    findManualInvoiceIds: async (numbers) =>
+      new Map(manualInvoices.filter((i) => numbers.includes(i.name)).map((i) => [i.name, i.id])),
+    createManualInvoice: async (record) => {
+      const id = `manual-${manualInvoices.length + 1}`;
+      manualInvoices.push({ ...record, id });
+      return id;
+    },
+    updateManualInvoice: async (id, data) => {
+      Object.assign(manualInvoices.find((i) => i.id === id)!, data);
+    },
+    findPersonIdsByEmail: async (email) =>
+      people.filter((p) => p.email?.toLowerCase() === email.toLowerCase()).map((p) => p.id),
+    findPersonIdsByName: async (names) =>
+      people
+        .filter((p) =>
+          names.some(
+            (n) =>
+              n.firstName.toLowerCase() === p.firstName.toLowerCase() &&
+              n.lastName.toLowerCase() === p.lastName.toLowerCase(),
+          ),
+        )
+        .map((p) => p.id),
     findUnpaidDueOn: async (dates) =>
       invoices
         .filter((i) => i.paymentStatus !== PAYMENT_STATUS.PAID && i.dueDate && dates.includes(i.dueDate))
@@ -98,7 +127,7 @@ export const createMemoryStore = () => {
     if (!xml) throw new Error(`brak pliku ${url}`);
     return xml;
   };
-  return { store, invoices, lines, files, readFile };
+  return { store, invoices, manualInvoices, lines, files, people, readFile };
 };
 
 export const createMemoryKv = () => {

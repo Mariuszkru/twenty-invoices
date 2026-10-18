@@ -1,4 +1,5 @@
 import type { Direction } from 'src/constants/options';
+import type { ManualInvoiceRecord, ManualInvoiceUpdate } from 'src/lib/manual/import-manual';
 import type { InvoiceSummary } from 'src/lib/notify/messages';
 import type { Currency, InvoiceRecord, LineRecord } from 'src/lib/sync/mapping';
 
@@ -41,7 +42,7 @@ export type InvoiceStore = {
   findExistingKsefNumbers: (ksefNumbers: string[]) => Promise<Set<string>>;
   createInvoices: (records: InvoiceRecord[]) => Promise<void>;
   findPendingInvoices: (limit: number) => Promise<PendingInvoice[]>;
-  // faktury ze statusem COMPLETE i zapisanym XML, stronicowane kursorem
+  // faktury KSeF ze statusem COMPLETE (bez ręcznego importu), stronicowane kursorem
   listInvoicesWithXml: (
     after: string | null,
     limit: number,
@@ -52,6 +53,14 @@ export type InvoiceStore = {
   // null = pole company.nip nie istnieje w workspace (brak dodatku regon-nip)
   findCompanyIdsByNip: (nips: string[]) => Promise<Map<string, string> | null>;
   linkCompanyByNip: (nip: string, companyId: string) => Promise<{ invoices: number; lines: number }>;
+  // numer faktury -> id dla faktur z ręcznego importu (źródła ENOVA, SYMFONIA)
+  findManualInvoiceIds: (numbers: string[]) => Promise<Map<string, string>>;
+  createManualInvoice: (record: ManualInvoiceRecord) => Promise<string>;
+  updateManualInvoice: (id: string, data: ManualInvoiceUpdate) => Promise<void>;
+  // identyfikatory osób z danym e-mailem (bez rozróżniania wielkości liter)
+  findPersonIdsByEmail: (email: string) => Promise<string[]>;
+  // identyfikatory osób o dokładnie takim imieniu i nazwisku (bez rozróżniania wielkości liter)
+  findPersonIdsByName: (names: { firstName: string; lastName: string }[]) => Promise<string[]>;
   uploadXml: (xml: string, filename: string) => Promise<{ fileId: string; label: string }>;
   // niezapłacone (UNPAID/PARTIAL) faktury obu kierunków z terminem w jednym z podanych dni
   findUnpaidDueOn: (dates: string[]) => Promise<InvoiceSummary[]>;

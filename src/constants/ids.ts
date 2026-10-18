@@ -34,6 +34,8 @@ export const ID = {
   invBankAccount: '69fdac1f-bdec-44a7-baa5-292ad632ecb1',
   invKsefPaymentId: '00e83a5f-88ff-44e7-94a6-102c7e8ca933',
   invNewNotifiedAt: '489b217b-1c4d-4e7c-bb62-e1f016ec485c',
+  invPerson: 'b57b1d86-35b4-44c0-a84f-3ee95e1e0a82',
+  invSource: 'f551067a-4a87-4db4-834f-bbece1d43c89',
 
   lineInvoice: 'f524ee47-f461-427d-ad32-696ca1f68fca',
   lineDirection: '55ccab41-92c6-4701-964f-b00d4e26a854',
@@ -57,6 +59,7 @@ export const ID = {
 
   companyKsefInvoices: '6bb2c257-c564-483b-9d16-24fa20ea4df2',
   companyKsefInvoiceLines: '8805ede4-f75c-453a-a366-c454e775d055',
+  personKsefInvoices: '07a5397b-e790-4b58-9a04-f547201b630b',
 
   idxKsefNumber: 'e569ebb0-0332-481d-8ced-e06f43aff480',
   idxKsefNumberField: '9870e35a-2fa9-4933-84e6-44e658789773',
@@ -76,9 +79,12 @@ export const ID = {
   fnRelinkCompany: '837d1f8a-2e6c-4876-b412-de9667a38bb1',
   fnReprocessXml: 'e47da952-2b43-444e-be9e-36042643e68f',
   fnPaymentReminders: 'e49e7f76-c428-4517-a573-2b9cb4bc10cb',
+  fnImportXml: '937a8025-3870-40ce-b182-45a714eb6011',
 
   fcSyncCommand: 'a00503de-99a0-408b-993d-bd1725886bff',
   cmdSync: 'bd29b4c2-6dfa-4c5b-b7d2-ecd9d46f783a',
+  fcImportXml: '644b22b7-d8bf-4b82-9153-9fe9a834130f',
+  cmdImportXml: 'f71dfbb5-fb4b-4bfd-a23d-a036dd82ccd3',
 
   viewSales: '77628d2c-df5b-41ff-960e-a6ae91d3f177',
   viewPurchases: 'e05d113d-d2a6-40ef-97ff-e30269f23cc1',
