@@ -26,7 +26,7 @@ export default defineView({
     { universalIdentifier: '99c9137e-319b-46bb-b540-094e52e2f8d0', fieldMetadataUniversalIdentifier: ID.btxDirection, position: 2, isVisible: true, size: 110 },
     { universalIdentifier: 'fe4df5ca-ebbd-4ea9-b0ff-af3b7e024f6d', fieldMetadataUniversalIdentifier: ID.btxAmount, position: 3, isVisible: true, size: 140 },
     { universalIdentifier: '113cebdd-8e8d-4cb0-ad57-379113356124', fieldMetadataUniversalIdentifier: ID.btxMatchStatus, position: 4, isVisible: true, size: 190 },
-    { universalIdentifier: 'abf473f5-f47b-45a1-a50b-ea23c11f58f6', fieldMetadataUniversalIdentifier: ID.btxInvoice, position: 5, isVisible: true, size: 170 },
+    { universalIdentifier: 'b95e6994-f09f-4378-8791-4b0ee4b5854b', fieldMetadataUniversalIdentifier: ID.btxAllocations, position: 5, isVisible: true, size: 220 },
     { universalIdentifier: 'a3afcd84-d82f-4981-8e1c-8f05cff6a6b7', fieldMetadataUniversalIdentifier: ID.btxCounterpartyName, position: 6, isVisible: true, size: 200 },
     { universalIdentifier: '34975616-500c-4580-9bc5-8aa5f9c3bc4d', fieldMetadataUniversalIdentifier: ID.btxRemittance, position: 7, isVisible: true, size: 260 },
     { universalIdentifier: '4fe34237-315d-48f2-b313-4b8abba7aea5', fieldMetadataUniversalIdentifier: ID.btxMatchNote, position: 8, isVisible: true, size: 260 },

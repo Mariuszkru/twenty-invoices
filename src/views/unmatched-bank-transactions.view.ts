@@ -9,7 +9,7 @@ import { ID } from 'src/constants/ids';
 import { MATCH_STATUS } from 'src/constants/options';
 import { APPLICATION_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
 
-// Transakcje bez faktury: do ręcznego przypisania (pole Faktura) albo oznaczenia jako pominięte.
+// Transakcje bez faktury: do rozliczenia w panelu "Rozlicz przelew" albo oznaczenia jako pominięte.
 export default defineView({
   universalIdentifier: ID.viewBankUnmatched,
   name: 'Nieprzypisane transakcje',
@@ -31,7 +31,7 @@ export default defineView({
     { universalIdentifier: '878ee29c-5432-4c73-ae6c-9add3f860e11', fieldMetadataUniversalIdentifier: ID.btxBookingDate, position: 1, isVisible: true, size: 130 },
     { universalIdentifier: '76287edb-12e8-4a6b-8be1-5d62722c7cf9', fieldMetadataUniversalIdentifier: ID.btxDirection, position: 2, isVisible: true, size: 110 },
     { universalIdentifier: 'f3cfc3e9-1af0-4214-aea3-853aa3469677', fieldMetadataUniversalIdentifier: ID.btxAmount, position: 3, isVisible: true, size: 140 },
-    { universalIdentifier: '7fec32ec-1bb6-4acf-b071-2dcad8cb7d53', fieldMetadataUniversalIdentifier: ID.btxInvoice, position: 4, isVisible: true, size: 170 },
+    { universalIdentifier: 'd44c2dd0-eca2-46d1-be3d-444a3d2a2b5d', fieldMetadataUniversalIdentifier: ID.btxAllocations, position: 4, isVisible: true, size: 220 },
     { universalIdentifier: '171463e7-e19d-4385-8119-24defcd19419', fieldMetadataUniversalIdentifier: ID.btxCounterpartyName, position: 5, isVisible: true, size: 200 },
     { universalIdentifier: '37da1b54-2a3a-4f3e-ab2d-80dd5ffd152d', fieldMetadataUniversalIdentifier: ID.btxRemittance, position: 6, isVisible: true, size: 260 },
     { universalIdentifier: 'ec80986f-3116-4471-b828-8fd3dbb74807', fieldMetadataUniversalIdentifier: ID.btxMatchNote, position: 7, isVisible: true, size: 260 },

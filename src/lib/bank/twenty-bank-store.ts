@@ -2,7 +2,7 @@ import { CoreApiClient } from 'twenty-client-sdk/core';
 
 import { MATCH_STATUS, PAYMENT_STATUS } from 'src/constants/options';
 import type { OpenInvoice } from 'src/lib/bank/match';
-import type { BankStore, StoredTransaction } from 'src/lib/bank/store';
+import type { BankStore, StoredAllocation, StoredTransaction } from 'src/lib/bank/store';
 import type { Currency } from 'src/lib/sync/mapping';
 import { chunks, type Edges, type LooseClient } from 'src/lib/sync/twenty-store';
 
@@ -20,7 +20,6 @@ const TRANSACTION_SELECTION = {
   counterpartyAccount: true,
   remittanceInformation: true,
   accountIban: true,
-  invoiceId: true,
   matchStatus: true,
   matchNote: true,
 } as const;
@@ -38,8 +37,10 @@ const OPEN_INVOICE_SELECTION = {
   issueDate: true,
 } as const;
 
+type RawCurrency = { amountMicros: number | null; currencyCode: string } | null;
+
 // Pusta waluta w Twenty to amountMicros = null – dla logiki dopasowania to brak kwoty.
-const currencyOrNull = (value: { amountMicros: number | null; currencyCode: string } | null): Currency | null =>
+const currencyOrNull = (value: RawCurrency): Currency | null =>
   value && value.amountMicros !== null ? { amountMicros: Number(value.amountMicros), currencyCode: value.currencyCode } : null;
 
 type Connection<T> = Edges<T> & { pageInfo: { endCursor: string | null; hasNextPage: boolean } };
@@ -66,6 +67,28 @@ export const createTwentyBankStore = (): BankStore => {
     return items;
   };
 
+  const toTransaction = (t: StoredTransaction & { amount: RawCurrency }): StoredTransaction | null => {
+    const amount = currencyOrNull(t.amount);
+    return amount ? { ...t, amount } : null;
+  };
+
+  // suma rozliczeń per faktura, bez transakcji oznaczonych jako pominięte
+  const allocatedByInvoice = async (invoiceIds: string[]) => {
+    const totals = new Map<string, number>();
+    for (const part of chunks(invoiceIds, PAGE)) {
+      const rows = await queryAll<{ invoiceId: string; amount: RawCurrency; transaction: { matchStatus: string | null } | null }>(
+        'paymentAllocations',
+        { filter: { invoiceId: { in: part } } },
+        { invoiceId: true, amount: { amountMicros: true, currencyCode: true }, transaction: { matchStatus: true } },
+      );
+      for (const a of rows) {
+        if (a.transaction?.matchStatus === MATCH_STATUS.IGNORED) continue;
+        totals.set(a.invoiceId, (totals.get(a.invoiceId) ?? 0) + (currencyOrNull(a.amount)?.amountMicros ?? 0));
+      }
+    }
+    return totals;
+  };
+
   return {
     findExistingTransactionIds: async (externalIds) => {
       const found = new Set<string>();
@@ -84,13 +107,31 @@ export const createTwentyBankStore = (): BankStore => {
     },
 
     createTransactions: async (records) => {
+      const ids = new Map<string, string>();
       for (const part of chunks(records)) {
-        await client.mutation({ createBankTransactions: { __args: { data: part }, id: true } });
+        const result = await client.mutation({
+          createBankTransactions: { __args: { data: part }, id: true, externalId: true },
+        });
+        for (const row of result.createBankTransactions as { id: string; externalId: string }[]) {
+          ids.set(row.externalId, row.id);
+        }
       }
+      return ids;
+    },
+
+    getTransaction: async (id) => {
+      const result = await client.query({
+        bankTransactions: {
+          __args: { filter: { id: { eq: id } }, first: 1 },
+          edges: { node: TRANSACTION_SELECTION },
+        },
+      });
+      const node = (result.bankTransactions as Edges<StoredTransaction & { amount: RawCurrency }>).edges[0]?.node;
+      return node ? toTransaction(node) : null;
     },
 
     findUnmatchedTransactions: async (since) => {
-      const rows = await queryAll<StoredTransaction & { amount: { amountMicros: number | null; currencyCode: string } }>(
+      const rows = await queryAll<StoredTransaction & { amount: RawCurrency }>(
         'bankTransactions',
         {
           filter: { matchStatus: { eq: MATCH_STATUS.UNMATCHED }, bookingDate: { gte: since } },
@@ -98,14 +139,35 @@ export const createTwentyBankStore = (): BankStore => {
         },
         TRANSACTION_SELECTION,
       );
-      return rows.flatMap((t) => {
-        const amount = currencyOrNull(t.amount);
-        return amount ? [{ ...t, amount }] : [];
-      });
+      return rows.flatMap((t) => toTransaction(t) ?? []);
     },
 
     updateTransaction: async (id, data) => {
       await client.mutation({ updateBankTransaction: { __args: { id, data }, id: true } });
+    },
+
+    createAllocations: async (records) => {
+      for (const part of chunks(records)) {
+        await client.mutation({ createPaymentAllocations: { __args: { data: part }, id: true } });
+      }
+    },
+
+    listTransactionAllocations: async (transactionId) => {
+      const rows = await queryAll<StoredAllocation & { amount: RawCurrency }>(
+        'paymentAllocations',
+        { filter: { transactionId: { eq: transactionId } } },
+        { id: true, transactionId: true, invoiceId: true, name: true, amount: { amountMicros: true, currencyCode: true }, origin: true },
+      );
+      return rows.flatMap((a) => {
+        const amount = currencyOrNull(a.amount);
+        return amount ? [{ ...a, amount }] : [];
+      });
+    },
+
+    deleteAllocations: async (ids) => {
+      for (const part of chunks(ids)) {
+        await client.mutation({ destroyPaymentAllocations: { __args: { filter: { id: { in: part } } }, id: true } });
+      }
     },
 
     findOpenInvoices: async () => {
@@ -127,29 +189,22 @@ export const createTwentyBankStore = (): BankStore => {
         { filter: { paymentStatus: { eq: PAYMENT_STATUS.PAID }, issueDate: { gte: since } } },
         OPEN_INVOICE_SELECTION,
       );
-      const linked = new Map<string, number>();
-      for (const part of chunks(rows.map((r) => r.id), PAGE)) {
-        const transactions = await queryAll<{
-          invoiceId: string;
-          amount: { amountMicros: number | null; currencyCode: string } | null;
-        }>(
-          'bankTransactions',
-          { filter: { invoiceId: { in: part }, matchStatus: { neq: MATCH_STATUS.IGNORED } } },
-          { invoiceId: true, amount: { amountMicros: true, currencyCode: true } },
-        );
-        for (const t of transactions) {
-          linked.set(t.invoiceId, (linked.get(t.invoiceId) ?? 0) + (currencyOrNull(t.amount)?.amountMicros ?? 0));
-        }
-      }
+      const allocated = await allocatedByInvoice(rows.map((r) => r.id));
       return rows.map((i) => {
         const grossAmount = currencyOrNull(i.grossAmount);
-        const paid = linked.get(i.id);
+        const paid = allocated.get(i.id);
         return {
           ...i,
           grossAmount,
           paidAmount: paid && grossAmount ? { amountMicros: paid, currencyCode: grossAmount.currencyCode } : null,
         };
       });
+    },
+
+    getInvoices: async (ids) => {
+      if (ids.length === 0) return [];
+      const rows = await queryAll<OpenInvoice>('ksefInvoices', { filter: { id: { in: ids } } }, OPEN_INVOICE_SELECTION);
+      return rows.map((i) => ({ ...i, grossAmount: currencyOrNull(i.grossAmount), paidAmount: currencyOrNull(i.paidAmount) }));
     },
 
     getInvoiceGross: async (invoiceId) => {
@@ -159,21 +214,24 @@ export const createTwentyBankStore = (): BankStore => {
           edges: { node: { grossAmount: { amountMicros: true, currencyCode: true } } },
         },
       });
-      const node = (result.ksefInvoices as Edges<{ grossAmount: Currency | null }>).edges[0]?.node;
+      const node = (result.ksefInvoices as Edges<{ grossAmount: RawCurrency }>).edges[0]?.node;
       return currencyOrNull(node?.grossAmount ?? null);
     },
 
-    listInvoiceTransactions: async (invoiceId) => {
+    listInvoiceAllocations: async (invoiceId) => {
       const rows = await queryAll<{
-        amount: { amountMicros: number | null; currencyCode: string } | null;
-        bookingDate: string | null;
-        matchStatus: string | null;
+        amount: RawCurrency;
+        transaction: { bookingDate: string | null; matchStatus: string | null } | null;
       }>(
-        'bankTransactions',
+        'paymentAllocations',
         { filter: { invoiceId: { eq: invoiceId } } },
-        { amount: { amountMicros: true, currencyCode: true }, bookingDate: true, matchStatus: true },
+        { amount: { amountMicros: true, currencyCode: true }, transaction: { bookingDate: true, matchStatus: true } },
       );
-      return rows.map((t) => ({ ...t, amount: currencyOrNull(t.amount) }));
+      return rows.map((a) => ({
+        amount: currencyOrNull(a.amount),
+        bookingDate: a.transaction?.bookingDate ?? null,
+        matchStatus: a.transaction?.matchStatus ?? null,
+      }));
     },
 
     updateInvoicePayment: async (invoiceId, payment) => {

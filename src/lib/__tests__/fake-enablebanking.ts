@@ -2,7 +2,7 @@ import { MATCH_STATUS } from 'src/constants/options';
 import { EnableBankingApiError, type EnableBankingClient } from 'src/lib/bank/enablebanking-http';
 import type { OpenInvoice } from 'src/lib/bank/match';
 import type { InvoicePayment } from 'src/lib/bank/payment';
-import type { BankStore, StoredTransaction } from 'src/lib/bank/store';
+import type { BankStore, StoredAllocation, StoredTransaction } from 'src/lib/bank/store';
 import type { ApiTransaction } from 'src/lib/bank/transactions';
 
 // Fałszywe API Enable Banking (bez sieci) i magazyn transakcji w pamięci do testów wyciągów.
@@ -78,20 +78,39 @@ export type MemoryInvoice = OpenInvoice & { paymentStatus: string; paidAt: strin
 
 export const createMemoryBankStore = (invoices: MemoryInvoice[]) => {
   const transactions: StoredTransaction[] = [];
+  const allocations: StoredAllocation[] = [];
+  const statusOf = (transactionId: string) => transactions.find((t) => t.id === transactionId)?.matchStatus ?? null;
+  const allocatedTo = (invoiceId: string) =>
+    allocations
+      .filter((a) => a.invoiceId === invoiceId && statusOf(a.transactionId) !== MATCH_STATUS.IGNORED)
+      .reduce((sum, a) => sum + a.amount.amountMicros, 0);
 
   const store: BankStore = {
     findExistingTransactionIds: async (ids) =>
       new Set(transactions.filter((t) => ids.includes(t.externalId)).map((t) => t.externalId)),
     createTransactions: async (records) => {
+      const ids = new Map<string, string>();
       for (const r of records) {
         if (transactions.some((t) => t.externalId === r.externalId)) throw new Error('duplicate externalId');
-        transactions.push({ ...r, id: `tx-${transactions.length + 1}` });
+        const id = `tx-${transactions.length + 1}`;
+        transactions.push({ ...r, id });
+        ids.set(r.externalId, id);
       }
+      return ids;
     },
+    getTransaction: async (id) => structuredClone(transactions.find((t) => t.id === id)) ?? null,
     findUnmatchedTransactions: async (since) =>
       transactions.filter((t) => t.matchStatus === MATCH_STATUS.UNMATCHED && (t.bookingDate ?? '') >= since),
     updateTransaction: async (id, data) => {
       Object.assign(transactions.find((t) => t.id === id)!, data);
+    },
+    createAllocations: async (records) => {
+      for (const r of records) allocations.push({ ...r, id: `alloc-${allocations.length + 1}` });
+    },
+    listTransactionAllocations: async (transactionId) =>
+      allocations.filter((a) => a.transactionId === transactionId).map((a) => structuredClone(a)),
+    deleteAllocations: async (ids) => {
+      for (let i = allocations.length - 1; i >= 0; i--) if (ids.includes(allocations[i].id)) allocations.splice(i, 1);
     },
     findOpenInvoices: async () =>
       invoices.filter((i) => i.paymentStatus !== 'PAID').map((i) => structuredClone(i)),
@@ -99,24 +118,29 @@ export const createMemoryBankStore = (invoices: MemoryInvoice[]) => {
       invoices
         .filter((i) => i.paymentStatus === 'PAID' && (i.issueDate ?? '') >= since)
         .map((i) => {
-          const linked = transactions
-            .filter((t) => t.invoiceId === i.id && t.matchStatus !== MATCH_STATUS.IGNORED)
-            .reduce((sum, t) => sum + t.amount.amountMicros, 0);
+          const linked = allocatedTo(i.id);
           return {
             ...structuredClone(i),
             paidAmount: linked && i.grossAmount ? { amountMicros: linked, currencyCode: i.grossAmount.currencyCode } : null,
           };
         }),
+    getInvoices: async (ids) => invoices.filter((i) => ids.includes(i.id)).map((i) => structuredClone(i)),
     getInvoiceGross: async (id) => invoices.find((i) => i.id === id)?.grossAmount ?? null,
-    listInvoiceTransactions: async (id) =>
-      transactions
-        .filter((t) => t.invoiceId === id)
-        .map((t) => ({ amount: t.amount, bookingDate: t.bookingDate, matchStatus: t.matchStatus })),
+    listInvoiceAllocations: async (id) =>
+      allocations
+        .filter((a) => a.invoiceId === id)
+        .map((a) => {
+          const t = transactions.find((x) => x.id === a.transactionId);
+          return { amount: a.amount, bookingDate: t?.bookingDate ?? null, matchStatus: t?.matchStatus ?? null };
+        }),
     updateInvoicePayment: async (id, payment: InvoicePayment) => {
       Object.assign(invoices.find((i) => i.id === id)!, payment);
     },
   };
-  return { store, transactions, invoices };
+  // faktury, do których przypisano transakcję (kolejność rozliczeń)
+  const invoiceIdsOf = (transactionId: string) =>
+    allocations.filter((a) => a.transactionId === transactionId).map((a) => a.invoiceId);
+  return { store, transactions, allocations, invoices, invoiceIdsOf };
 };
 
 export const openInvoice = (overrides: Partial<MemoryInvoice>): MemoryInvoice => ({

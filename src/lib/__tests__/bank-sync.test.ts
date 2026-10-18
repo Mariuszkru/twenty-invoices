@@ -63,10 +63,11 @@ describe('runBankSync', () => {
     const result = await runBankSync(deps);
 
     expect(result).toMatchObject({ ok: true, fetched: 2, created: 2, matched: 1, unmatched: 1, invoicesUpdated: 1 });
-    expect(memory.transactions.map((t) => [t.externalId, t.matchStatus, t.invoiceId])).toEqual([
-      ['acc-1:r1', 'AUTO', 'inv-1'],
-      ['acc-1:r3', 'UNMATCHED', null],
+    expect(memory.transactions.map((t) => [t.externalId, t.matchStatus, memory.invoiceIdsOf(t.id)])).toEqual([
+      ['acc-1:r1', 'AUTO', ['inv-1']],
+      ['acc-1:r3', 'UNMATCHED', []],
     ]);
+    expect(memory.allocations[0]).toMatchObject({ name: 'FV/10/2026/001 ← 1230.00 PLN', origin: 'AUTO' });
     expect(memory.invoices[0]).toMatchObject({
       paymentStatus: 'PAID',
       paidAmount: { amountMicros: 1_230_000_000, currencyCode: 'PLN' },
@@ -114,7 +115,8 @@ describe('runBankSync', () => {
     invoices.push(openInvoice({ id: 'late' }));
     const result = await runBankSync({ ...deps, now: () => new Date('2026-10-19T05:00:00Z') });
     expect(result.rematched).toBe(1);
-    expect(memory.transactions[0]).toMatchObject({ matchStatus: 'AUTO', invoiceId: 'late' });
+    expect(memory.transactions[0].matchStatus).toBe('AUTO');
+    expect(memory.invoiceIdsOf(memory.transactions[0].id)).toEqual(['late']);
     expect(invoices[0].paymentStatus).toBe('PAID');
   });
 
@@ -131,7 +133,7 @@ describe('runBankSync', () => {
       [openInvoice({ id: 'inv-1' })],
     );
     await runBankSync(deps);
-    expect(memory.transactions.map((t) => t.invoiceId)).toEqual(['inv-1', 'inv-1']);
+    expect(memory.transactions.map((t) => memory.invoiceIdsOf(t.id))).toEqual([['inv-1'], ['inv-1']]);
     expect(memory.invoices[0].paymentStatus).toBe('PAID');
   });
 
@@ -161,13 +163,34 @@ describe('runBankSync', () => {
 
     expect(result).toMatchObject({ matched: 1, linkedToPaid: 1, unmatched: 1, invoicesUpdated: 0 });
     expect(memory.transactions[0]).toMatchObject({
-      invoiceId: 'paid',
       matchStatus: 'AUTO',
       matchNote: expect.stringContaining('faktura była już oznaczona jako zapłacona'),
     });
-    expect(memory.transactions[1].invoiceId).toBeNull();
+    expect(memory.invoiceIdsOf(memory.transactions[0].id)).toEqual(['paid']);
+    expect(memory.invoiceIdsOf(memory.transactions[1].id)).toEqual([]);
     expect(memory.invoices[0]).toMatchObject({ paymentStatus: 'PAID', paidAt: '2026-10-01', paidAmount: null });
     expect(sent[0]).toContain('w tym 1 do faktur już zapłaconych');
+  });
+
+  it('przelew zbiorczy rozlicza kilka faktur i oznacza je jako zapłacone', async () => {
+    const { deps, memory } = setup(
+      {
+        transactions: {
+          'acc-1': [apiTransaction({ entry_reference: 'r1', amount: '1500.00', remittance_information: ['FV/1/2026, FV/2/2026'] })],
+        },
+      },
+      [
+        openInvoice({ id: 'a', name: 'FV/1/2026', grossAmount: { amountMicros: 1_000_000_000, currencyCode: 'PLN' } }),
+        openInvoice({ id: 'b', name: 'FV/2/2026', grossAmount: { amountMicros: 500_000_000, currencyCode: 'PLN' } }),
+      ],
+    );
+    const result = await runBankSync(deps);
+    expect(result).toMatchObject({ matched: 1, invoicesUpdated: 2 });
+    expect(memory.allocations.map((a) => [a.invoiceId, a.amount.amountMicros])).toEqual([
+      ['a', 1_000_000_000],
+      ['b', 500_000_000],
+    ]);
+    expect(memory.invoices.map((i) => i.paymentStatus)).toEqual(['PAID', 'PAID']);
   });
 
   it('bez sesji kończy się NO_CONSENT i prosi o połączenie z bankiem', async () => {

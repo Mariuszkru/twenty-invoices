@@ -1,4 +1,4 @@
-import { MATCH_STATUS } from 'src/constants/options';
+import { ALLOCATION_ORIGIN, MATCH_STATUS } from 'src/constants/options';
 import type { StoredBankSession } from 'src/lib/bank/consent';
 import { isConsentError, type EnableBankingClient } from 'src/lib/bank/enablebanking-http';
 import {
@@ -6,6 +6,7 @@ import {
   matchTransaction,
   remainingMicros,
   type MatchableTransaction,
+  type MatchResult,
   type OpenInvoice,
 } from 'src/lib/bank/match';
 import {
@@ -14,8 +15,8 @@ import {
   consentExpiringMessage,
   noConsentMessage,
 } from 'src/lib/bank/messages';
-import { recomputeInvoicePayment } from 'src/lib/bank/payment';
-import type { BankStore, TransactionMatch } from 'src/lib/bank/store';
+import { allocationName, recomputeInvoicePayment } from 'src/lib/bank/payment';
+import type { AllocationRecord, BankStore, TransactionStatus } from 'src/lib/bank/store';
 import { fetchBookedTransactions, type BankTransactionRecord } from 'src/lib/bank/transactions';
 import { errorMessage } from 'src/lib/sync/import-details';
 import type { KvStore } from 'src/lib/sync/rate-budget';
@@ -131,21 +132,31 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
       if (remainingMicros(invoice) <= AMOUNT_TOLERANCE_MICROS) list.splice(list.indexOf(invoice), 1);
     };
     // najpierw faktury otwarte (zmiana statusu), potem już zapłacone – tylko przypięcie jako ślad zapłaty
-    const findMatch = (t: MatchableTransaction) => {
+    const findMatch = (t: MatchableTransaction): MatchResult => {
       const open = matchTransaction(t, openInvoices);
-      if (open.invoiceId) {
-        touchedInvoices.add(open.invoiceId);
-        consume(openInvoices, open.invoiceId, t.amount.amountMicros);
+      if (open.allocations.length) {
+        for (const a of open.allocations) {
+          touchedInvoices.add(a.invoiceId);
+          consume(openInvoices, a.invoiceId, a.amountMicros);
+        }
         return open;
       }
       const paid = matchTransaction(t, paidInvoices);
-      if (paid.invoiceId) {
+      if (paid.allocations.length) {
         summary.linkedToPaid++;
-        consume(paidInvoices, paid.invoiceId, t.amount.amountMicros);
-        return { invoiceId: paid.invoiceId, note: `${paid.note}; faktura była już oznaczona jako zapłacona` };
+        for (const a of paid.allocations) consume(paidInvoices, a.invoiceId, a.amountMicros);
+        return { ...paid, note: `${paid.note}; faktura była już oznaczona jako zapłacona` };
       }
       return open;
     };
+    const allocationRecords = (transactionId: string, t: MatchableTransaction, match: MatchResult): AllocationRecord[] =>
+      match.allocations.map((a) => ({
+        transactionId,
+        invoiceId: a.invoiceId,
+        name: allocationName(a.invoiceName, a.amountMicros, t.amount.currencyCode),
+        amount: { amountMicros: a.amountMicros, currencyCode: t.amount.currencyCode },
+        origin: ALLOCATION_ORIGIN.AUTO,
+      }));
 
     const today = isoDate(startedAt);
     const freshUnmatched = new Set<string>();
@@ -163,9 +174,9 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
         .filter((t) => !existing.has(t.externalId))
         .sort((a, b) => (a.bookingDate ?? '').localeCompare(b.bookingDate ?? ''));
 
-      const records: (BankTransactionRecord & TransactionMatch)[] = fresh.map((t) => {
-        const match = findMatch(t);
-        if (match.invoiceId) {
+      const matches = fresh.map((t) => ({ t, match: findMatch(t) }));
+      const records: (BankTransactionRecord & TransactionStatus)[] = matches.map(({ t, match }) => {
+        if (match.allocations.length) {
           summary.matched++;
         } else {
           summary.unmatched++;
@@ -173,12 +184,18 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
         }
         return {
           ...t,
-          invoiceId: match.invoiceId,
-          matchStatus: match.invoiceId ? MATCH_STATUS.AUTO : MATCH_STATUS.UNMATCHED,
+          matchStatus: match.allocations.length ? MATCH_STATUS.AUTO : MATCH_STATUS.UNMATCHED,
           matchNote: match.note,
         };
       });
-      if (records.length) await deps.store.createTransactions(records);
+      if (records.length) {
+        const ids = await deps.store.createTransactions(records);
+        const allocations = matches.flatMap(({ t, match }) => {
+          const id = ids.get(t.externalId);
+          return id ? allocationRecords(id, t, match) : [];
+        });
+        if (allocations.length) await deps.store.createAllocations(allocations);
+      }
       summary.created += records.length;
       await deps.kv.set(BANK_KV_KEYS.cursor(account.uid), today);
       log(`rachunek ${account.iban ?? account.uid}: ${fetched.length} transakcji od ${dateFrom}, nowe ${records.length}`);
@@ -188,12 +205,9 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
     const pending = await deps.store.findUnmatchedTransactions(isoDate(startedAt - REMATCH_DAYS * DAY_MS));
     for (const t of pending) {
       const match = findMatch(t);
-      if (!match.invoiceId) continue;
-      await deps.store.updateTransaction(t.id, {
-        invoiceId: match.invoiceId,
-        matchStatus: MATCH_STATUS.AUTO,
-        matchNote: match.note,
-      });
+      if (!match.allocations.length) continue;
+      await deps.store.createAllocations(allocationRecords(t.id, t, match));
+      await deps.store.updateTransaction(t.id, { matchStatus: MATCH_STATUS.AUTO, matchNote: match.note });
       // nowa transakcja z tego przebiegu nie jest "wcześniejsza" – tylko przestaje być nieprzypisana
       if (freshUnmatched.delete(t.externalId)) {
         summary.unmatched--;

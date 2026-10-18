@@ -1,4 +1,4 @@
-import { defineObject, FieldType, OnDeleteAction, RelationType } from 'twenty-sdk/define';
+import { defineObject, FieldType, RelationType } from 'twenty-sdk/define';
 
 import { ID } from 'src/constants/ids';
 import {
@@ -8,7 +8,7 @@ import {
 } from 'src/constants/options';
 
 // Zaksięgowana transakcja z wyciągu bankowego pobrana przez Enable Banking. Pole `name` (dodawane automatycznie)
-// to kontrahent i tytuł przelewu. Przypisanie do faktury (automatyczne albo ręczne) wylicza status płatności faktury.
+// to kontrahent i tytuł przelewu. Rozliczenia z fakturami (automatyczne albo ręczne) wyliczają status płatności faktur.
 export default defineObject({
   universalIdentifier: ID.bankTxObject,
   nameSingular: 'bankTransaction',
@@ -91,7 +91,7 @@ export default defineObject({
       name: 'matchStatus',
       type: FieldType.SELECT,
       label: 'Dopasowanie',
-      description: 'Ręczna zmiana faktury ustawia "Przypisana ręcznie" i przelicza płatność faktury.',
+      description: 'Rozliczenie w panelu "Rozlicz przelew" ustawia "Przypisana ręcznie"; "Pominięta" wyłącza transakcję z płatności.',
       icon: 'IconLink',
       options: [...MATCH_STATUS_OPTIONS],
       defaultValue: `'${MATCH_STATUS.UNMATCHED}'`,
@@ -104,18 +104,15 @@ export default defineObject({
       icon: 'IconInfoCircle',
     },
     {
-      universalIdentifier: ID.btxInvoice,
-      name: 'invoice',
+      universalIdentifier: ID.btxAllocations,
+      name: 'allocations',
       type: FieldType.RELATION,
-      label: 'Faktura',
+      label: 'Rozliczenia',
+      description: 'Faktury opłacone tą transakcją wraz z kwotami; przelew zbiorczy ma kilka rozliczeń.',
       icon: 'IconFileInvoice',
-      relationTargetObjectMetadataUniversalIdentifier: ID.invoiceObject,
-      relationTargetFieldMetadataUniversalIdentifier: ID.invBankTransactions,
-      universalSettings: {
-        relationType: RelationType.MANY_TO_ONE,
-        onDelete: OnDeleteAction.SET_NULL,
-        joinColumnName: 'invoiceId',
-      },
+      relationTargetObjectMetadataUniversalIdentifier: ID.allocObject,
+      relationTargetFieldMetadataUniversalIdentifier: ID.allocTransaction,
+      universalSettings: { relationType: RelationType.ONE_TO_MANY },
     },
   ],
 });

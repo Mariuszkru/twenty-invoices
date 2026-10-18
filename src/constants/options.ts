@@ -126,3 +126,11 @@ export const MATCH_STATUS_OPTIONS = [
   { value: MATCH_STATUS.UNMATCHED, label: 'Nieprzypisana', position: 2, color: 'yellow' },
   { value: MATCH_STATUS.IGNORED, label: 'Pominięta', position: 3, color: 'gray' },
 ] as const;
+
+// Skąd pochodzi rozliczenie transakcji z fakturą.
+export const ALLOCATION_ORIGIN = { AUTO: 'AUTO', MANUAL: 'MANUAL' } as const;
+
+export const ALLOCATION_ORIGIN_OPTIONS = [
+  { value: ALLOCATION_ORIGIN.AUTO, label: 'Automatyczne', position: 0, color: 'green' },
+  { value: ALLOCATION_ORIGIN.MANUAL, label: 'Ręczne', position: 1, color: 'blue' },
+] as const;

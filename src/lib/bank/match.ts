@@ -30,7 +30,16 @@ export type MatchableTransaction = Pick<
   'direction' | 'amount' | 'remittanceInformation' | 'counterpartyName' | 'counterpartyAccount' | 'bookingDate'
 >;
 
-export type MatchResult = { invoiceId: string | null; note: string };
+// część kwoty transakcji przypisana do faktury
+export type Allocation = { invoiceId: string; invoiceName: string | null; amountMicros: number };
+// brak rozliczeń = transakcja nieprzypisana; kilka = przelew zbiorczy
+export type MatchResult = { allocations: Allocation[]; note: string };
+
+const single = (tx: MatchableTransaction, invoice: OpenInvoice, note: string): MatchResult => ({
+  allocations: [{ invoiceId: invoice.id, invoiceName: invoice.name, amountMicros: tx.amount.amountMicros }],
+  note,
+});
+const none = (note: string): MatchResult => ({ allocations: [], note });
 
 export const remainingMicros = (invoice: OpenInvoice): number =>
   (invoice.grossAmount?.amountMicros ?? 0) -
@@ -38,10 +47,14 @@ export const remainingMicros = (invoice: OpenInvoice): number =>
 
 const escapeRegExp = (text: string) => text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-// Numer faktury w tytule przelewu: separatory (/ - _ . spacja) są opcjonalne, a numer musi stać osobno,
-// żeby "1/2026" nie trafiało w "11/2026".
-const partsPattern = (parts: string[]) =>
-  new RegExp(`(?<![A-Z0-9])${parts.map(escapeRegExp).join('[\\s/\\\\\\-_.]*')}(?![A-Z0-9])`);
+// Numer faktury w tytule przelewu: separatory (/ - _ . spacja) są opcjonalne, a numer musi stać osobno.
+// Granica numeru: po cyfrze nie może stać cyfra, po literze ani litera, ani cyfra. Dzięki temu "NR26/FAAELE/009722"
+// (bank skleja tytuł) trafia w "26/FAAELE/009722", a "11/2026" nadal nie trafia w "1/2026".
+const partsPattern = (parts: string[]) => {
+  const before = /^\d/.test(parts[0]) ? '(?<![0-9])' : '(?<![A-Z0-9])';
+  const after = /\d$/.test(parts[parts.length - 1]) ? '(?![0-9])' : '(?![A-Z0-9])';
+  return new RegExp(`${before}${parts.map(escapeRegExp).join('[\\s/\\\\\\-_.]*')}${after}`);
+};
 
 const numberParts = (number: string) => number.toUpperCase().split(/[\s/\\\-_.]+/).filter(Boolean);
 
@@ -124,13 +137,23 @@ export const matchTransaction = (tx: MatchableTransaction, invoices: OpenInvoice
         : tx.amount.amountMicros - AMOUNT_TOLERANCE_MICROS > remaining
           ? `, nadpłata ${formatAmount(tx.amount.amountMicros - remaining)}`
           : '';
-    return { invoiceId: invoice.id, note: `W tytule ${reason} ${invoice.name ?? ''}`.trim() + amountNote };
+    return single(tx, invoice, `W tytule ${reason} ${invoice.name ?? ''}`.trim() + amountNote);
   }
+  // przelew zbiorczy: kilka numerów w tytule, a suma pozostałych kwot tych faktur równa kwocie przelewu
   if (byNumber.length > 1) {
-    return {
-      invoiceId: null,
-      note: `Tytuł pasuje do kilku faktur: ${byNumber.map((h) => h.invoice.name ?? h.invoice.id).join(', ')}`,
-    };
+    const total = byNumber.reduce((sum, h) => sum + remainingMicros(h.invoice), 0);
+    const names = byNumber.map((h) => h.invoice.name ?? h.invoice.id).join(', ');
+    if (Math.abs(total - tx.amount.amountMicros) < AMOUNT_TOLERANCE_MICROS * byNumber.length) {
+      return {
+        allocations: byNumber.map((h) => ({
+          invoiceId: h.invoice.id,
+          invoiceName: h.invoice.name,
+          amountMicros: remainingMicros(h.invoice),
+        })),
+        note: `Przelew zbiorczy: ${names}`,
+      };
+    }
+    return none(`Tytuł pasuje do kilku faktur (${names}), ale suma ${formatAmount(total)} różni się od kwoty przelewu`);
   }
 
   // 1b) sam rdzeń numeru (inny prefiks niż na fakturze) – tylko przy zgodnej kwocie
@@ -138,7 +161,7 @@ export const matchTransaction = (tx: MatchableTransaction, invoices: OpenInvoice
     ? candidates.filter((i) => amountFits(i) && i.name && corePattern(i.name)?.test(title.toUpperCase()))
     : [];
   if (byCore.length === 1) {
-    return { invoiceId: byCore[0].id, note: `W tytule numer ${byCore[0].name ?? ''} (inny prefiks) i zgodna kwota` };
+    return single(tx, byCore[0], `W tytule numer ${byCore[0].name ?? ''} (inny prefiks) i zgodna kwota`);
   }
 
   // 2) bez numeru: dokładna kwota i potwierdzony kontrahent (rachunek przy zakupie, nazwa przy sprzedaży)
@@ -151,10 +174,10 @@ export const matchTransaction = (tx: MatchableTransaction, invoices: OpenInvoice
   );
   if (confirmed.length === 1) {
     const by = direction === DIRECTION.PURCHASE ? 'rachunek odbiorcy' : 'nazwa kontrahenta';
-    return { invoiceId: confirmed[0].id, note: `Zgodna kwota i ${by} (${confirmed[0].name ?? ''})` };
+    return single(tx, confirmed[0], `Zgodna kwota i ${by} (${confirmed[0].name ?? ''})`);
   }
   if (confirmed.length > 1) {
-    return { invoiceId: null, note: `Kilka faktur tego kontrahenta z tą kwotą (${confirmed.length})` };
+    return none(`Kilka faktur tego kontrahenta z tą kwotą (${confirmed.length})`);
   }
 
   // 3) wydatek kartą albo przez bramkę płatności: bank nie podaje dostawcy, więc dokładna kwota i data faktury
@@ -167,27 +190,24 @@ export const matchTransaction = (tx: MatchableTransaction, invoices: OpenInvoice
       (i) => i.issueDate && Math.abs(Date.parse(`${i.issueDate.slice(0, 10)}T00:00:00Z`) - booked) <= CARD_DATE_WINDOW_DAYS * DAY_MS,
     );
     if (byDate.length === 1) {
-      return {
-        invoiceId: byDate[0].id,
-        note: `Zgodna kwota i data faktury ±${CARD_DATE_WINDOW_DAYS} dni (${byDate[0].name ?? ''}, ${byDate[0].counterpartyName ?? ''})`,
-      };
+      return single(
+        tx,
+        byDate[0],
+        `Zgodna kwota i data faktury ±${CARD_DATE_WINDOW_DAYS} dni (${byDate[0].name ?? ''}, ${byDate[0].counterpartyName ?? ''})`,
+      );
     }
     if (byDate.length > 1) {
-      return {
-        invoiceId: null,
-        note: `Kilka faktur z tą kwotą i datą: ${byDate.map((i) => i.name ?? i.id).join(', ')}`,
-      };
+      return none(`Kilka faktur z tą kwotą i datą: ${byDate.map((i) => i.name ?? i.id).join(', ')}`);
     }
   }
 
   if (byAmount.length > 0) {
-    return {
-      invoiceId: null,
-      note: `Faktury z tą kwotą (${byAmount.length}), ale kontrahent się nie zgadza: ${byAmount
+    return none(
+      `Faktury z tą kwotą (${byAmount.length}), ale kontrahent się nie zgadza: ${byAmount
         .slice(0, 5)
         .map((i) => i.name ?? i.id)
         .join(', ')}`,
-    };
+    );
   }
-  return { invoiceId: null, note: 'Brak faktury z tym numerem albo kwotą' };
+  return none('Brak faktury z tym numerem albo kwotą');
 };

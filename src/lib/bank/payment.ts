@@ -3,14 +3,18 @@ import { AMOUNT_TOLERANCE_MICROS } from 'src/lib/bank/match';
 import type { BankStore } from 'src/lib/bank/store';
 import type { Currency } from 'src/lib/sync/mapping';
 
-// Status płatności faktury wyliczany z sumy przypisanych transakcji (bez pominiętych). Ten sam kod obsługuje
-// dopasowanie automatyczne i ręczną zmianę faktury na transakcji.
+// Status płatności faktury wyliczany z sumy jej rozliczeń (bez pominiętych transakcji). Ten sam kod obsługuje
+// dopasowanie automatyczne, panel "Rozlicz przelew" i ręczne zmiany rozliczeń.
 
 export type InvoicePayment = {
   paymentStatus: string;
   paidAmount: Currency | null;
   paidAt: string | null;
 };
+
+// Nazwa rekordu rozliczenia widoczna w CRM: numer faktury i kwota.
+export const allocationName = (invoiceName: string | null, amountMicros: number, currencyCode: string) =>
+  `${invoiceName ?? 'Faktura'} ← ${(amountMicros / 1_000_000).toFixed(2)} ${currencyCode}`;
 
 export const computePayment = (
   gross: Currency | null,
@@ -32,13 +36,13 @@ export const computePayment = (
 };
 
 export const recomputeInvoicePayment = async (store: BankStore, invoiceId: string): Promise<InvoicePayment> => {
-  const [gross, transactions] = await Promise.all([
+  const [gross, allocations] = await Promise.all([
     store.getInvoiceGross(invoiceId),
-    store.listInvoiceTransactions(invoiceId),
+    store.listInvoiceAllocations(invoiceId),
   ]);
   const payment = computePayment(
     gross,
-    transactions.filter((t) => t.matchStatus !== MATCH_STATUS.IGNORED),
+    allocations.filter((a) => a.matchStatus !== MATCH_STATUS.IGNORED),
   );
   await store.updateInvoicePayment(invoiceId, payment);
   return payment;

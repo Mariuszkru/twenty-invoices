@@ -4,6 +4,7 @@ export const ID = {
   invoiceObject: '9ff04abb-6fa9-4f3c-a42a-c029d9bc5f53',
   lineObject: '90705ba0-514f-426b-a964-01afeeb53e14',
   bankTxObject: '4c929426-aac4-4452-99f5-6ef0370db918',
+  allocObject: '754d8bad-39ad-45cd-bc66-69d61badbfc1',
 
   invKsefNumber: 'ad20e42e-5477-4d2d-85de-1e5cf1f0996b',
   invDirection: '1d290559-c203-4f98-a53d-688832e266b6',
@@ -37,7 +38,7 @@ export const ID = {
   invNewNotifiedAt: '489b217b-1c4d-4e7c-bb62-e1f016ec485c',
   invPerson: 'b57b1d86-35b4-44c0-a84f-3ee95e1e0a82',
   invSource: 'f551067a-4a87-4db4-834f-bbece1d43c89',
-  invBankTransactions: '5e357785-66e3-4712-8579-2e787255452c',
+  invPaymentAllocations: '5b9f3178-0c4d-49fd-832e-f9a7c6dd2cb4',
 
   lineInvoice: 'f524ee47-f461-427d-ad32-696ca1f68fca',
   lineDirection: '55ccab41-92c6-4701-964f-b00d4e26a854',
@@ -70,7 +71,12 @@ export const ID = {
   btxAccountIban: '7e8decf7-1792-4638-acef-320129343c1d',
   btxMatchStatus: '4ecf7cd1-36d7-4e12-8cc4-5d377b78d0f5',
   btxMatchNote: 'a9f9da1c-9d01-4029-acea-3cd600cc95bc',
-  btxInvoice: '59e52252-8deb-4e98-97fc-47f47ee5c912',
+  btxAllocations: '80f6339e-7fce-4b7e-a7a4-5bb346bdcb8f',
+
+  allocTransaction: 'fbf73e79-6348-4a9d-af8c-1f84df620e37',
+  allocInvoice: '7002237e-617d-4ebe-b194-6261ff85483f',
+  allocAmount: 'e594c071-7bb8-4437-930c-70bae9b365c2',
+  allocOrigin: '3f4fde6b-6d83-41af-8524-cf96c68c2e4c',
 
   companyKsefInvoices: '6bb2c257-c564-483b-9d16-24fa20ea4df2',
   companyKsefInvoiceLines: '8805ede4-f75c-453a-a366-c454e775d055',
@@ -108,6 +114,9 @@ export const ID = {
   fnBankCallback: 'd6846b17-1ad8-42ec-8cf6-6d753b4783ad',
   fnBankStatus: '415edb07-93ae-4777-9307-a0ce4298a001',
   fnBankTxUpdated: '330c26e5-3c1b-49e6-ac07-437a6c060c2a',
+  fnBankAllocContext: '5d369919-9948-4c0d-a28b-670944f68d55',
+  fnBankAllocate: '5c295f93-3cbe-49ab-b161-ac6144a2b914',
+  fnAllocChanged: '14934d8c-48b2-4c76-998d-f163ae1e8db6',
 
   fcSyncCommand: 'a00503de-99a0-408b-993d-bd1725886bff',
   cmdSync: 'bd29b4c2-6dfa-4c5b-b7d2-ecd9d46f783a',
@@ -115,6 +124,8 @@ export const ID = {
   cmdImportXml: 'f71dfbb5-fb4b-4bfd-a23d-a036dd82ccd3',
   fcBankConnect: '9f6a6cde-b84e-47c1-8463-caf3d669b7ed',
   cmdBankConnect: '04485172-16a4-49ed-bf42-62a84b64f4d0',
+  fcBankAllocate: 'f6c5c670-047c-4f88-9679-24e79bfda7db',
+  cmdBankAllocate: '232c96f9-85c5-4deb-b749-9324a0914415',
 
   viewSales: '77628d2c-df5b-41ff-960e-a6ae91d3f177',
   viewPurchases: 'e05d113d-d2a6-40ef-97ff-e30269f23cc1',

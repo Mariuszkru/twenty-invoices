@@ -20,18 +20,23 @@ describe('matchTransaction', () => {
   it('dopasowuje po numerze faktury w tytule mimo innych separatorów', () => {
     const invoices = [openInvoice({ id: 'a', name: 'FV/10/2026/001' }), openInvoice({ id: 'b', name: 'FV/10/2026/002' })];
     const result = matchTransaction(tx({ remittanceInformation: 'Zapłata za fv 10-2026-001, dziękuję' }), invoices);
-    expect(result.invoiceId).toBe('a');
+    expect(result.allocations.map((a) => a.invoiceId)).toEqual(['a']);
     expect(result.note).toContain('numer faktury');
+  });
+
+  it('numer zaczynający się cyfrą może być sklejony z literami przed nim ("NR26/...")', () => {
+    const invoices = [openInvoice({ id: 'a', name: '26/FAAELE/009722', counterpartyName: 'X' })];
+    expect(matchTransaction(tx({ remittanceInformation: 'FAKTURA NR26/FAAELE/009722' }), invoices).allocations).toHaveLength(1);
   });
 
   it('nie myli 1/2026 z 11/2026', () => {
     const invoices = [openInvoice({ id: 'a', name: 'FS 1/2026' }), openInvoice({ id: 'b', name: 'FS 11/2026' })];
-    expect(matchTransaction(tx({ remittanceInformation: 'FS 11/2026' }), invoices).invoiceId).toBe('b');
+    expect(matchTransaction(tx({ remittanceInformation: 'FS 11/2026' }), invoices).allocations.map((a) => a.invoiceId)).toEqual(['b']);
   });
 
   it('dopasowuje po identyfikatorze płatności KSeF', () => {
     const invoices = [openInvoice({ id: 'a', name: 'A/1', ksefPaymentId: 'ABCDEF123456' })];
-    expect(matchTransaction(tx({ remittanceInformation: 'IPKSeF ABCDEF123456' }), invoices).invoiceId).toBe('a');
+    expect(matchTransaction(tx({ remittanceInformation: 'IPKSeF ABCDEF123456' }), invoices).allocations.map((a) => a.invoiceId)).toEqual(['a']);
   });
 
   it('wpłata mniejsza niż kwota faktury z numerem w tytule to wpłata częściowa', () => {
@@ -39,18 +44,18 @@ describe('matchTransaction', () => {
       tx({ amount: PLN(500), remittanceInformation: 'FV/10/2026/001 rata 1' }),
       [openInvoice({ id: 'a' })],
     );
-    expect(result).toEqual({ invoiceId: 'a', note: expect.stringContaining('wpłata częściowa (pozostało 730.00)') });
+    expect(result).toMatchObject({ allocations: [{ invoiceId: 'a' }], note: expect.stringContaining('wpłata częściowa (pozostało 730.00)') });
   });
 
   it('wpływ dopasowuje tylko faktury sprzedaży, wydatek tylko zakupowe', () => {
     const purchase = openInvoice({ id: 'p', direction: 'PURCHASE', name: 'FZ/1/2026' });
-    expect(matchTransaction(tx({ remittanceInformation: 'FZ/1/2026' }), [purchase]).invoiceId).toBeNull();
-    expect(matchTransaction(tx({ direction: 'DEBIT', remittanceInformation: 'FZ/1/2026' }), [purchase]).invoiceId).toBe('p');
+    expect(matchTransaction(tx({ remittanceInformation: 'FZ/1/2026' }), [purchase]).allocations).toEqual([]);
+    expect(matchTransaction(tx({ direction: 'DEBIT', remittanceInformation: 'FZ/1/2026' }), [purchase]).allocations.map((a) => a.invoiceId)).toEqual(['p']);
   });
 
   it('pomija faktury w innej walucie', () => {
     const eur = openInvoice({ id: 'e', grossAmount: { amountMicros: 1_230_000_000, currencyCode: 'EUR' } });
-    expect(matchTransaction(tx({ remittanceInformation: 'FV/10/2026/001' }), [eur]).invoiceId).toBeNull();
+    expect(matchTransaction(tx({ remittanceInformation: 'FV/10/2026/001' }), [eur]).allocations).toEqual([]);
   });
 
   it('bez numeru: zakup po kwocie i rachunku odbiorcy', () => {
@@ -62,12 +67,37 @@ describe('matchTransaction', () => {
       tx({ direction: 'DEBIT', remittanceInformation: 'Usługi IT', counterpartyAccount: 'PL27114020040000300201355387' }),
       invoices,
     );
-    expect(result.invoiceId).toBe('p1');
+    expect(result.allocations.map((a) => a.invoiceId)).toEqual(['p1']);
   });
 
   it('bez numeru: sprzedaż po kwocie i nazwie kontrahenta', () => {
     const invoices = [openInvoice({ id: 's', counterpartyName: 'ACME Spółka z o.o.' })];
-    expect(matchTransaction(tx({ counterpartyName: 'ACME SPOLKA Z OGRANICZONA' }), invoices).invoiceId).toBe('s');
+    expect(matchTransaction(tx({ counterpartyName: 'ACME SPOLKA Z OGRANICZONA' }), invoices).allocations.map((a) => a.invoiceId)).toEqual(['s']);
+  });
+
+  it('przelew zbiorczy: kilka numerów w tytule i suma pozostałych kwot równa przelewowi', () => {
+    const invoices = [
+      openInvoice({ id: 'a', name: '26/FAAPTR/031059', direction: 'PURCHASE', grossAmount: PLN(1376.71) }),
+      openInvoice({ id: 'b', name: '26/FAAELE/009722', direction: 'PURCHASE', grossAmount: PLN(1165.94), paidAmount: PLN(165.94) }),
+    ];
+    const result = matchTransaction(
+      tx({ direction: 'DEBIT', amount: PLN(2376.71), remittanceInformation: 'FAKTURA NR 26/FAAPTR/031059, FAKTURA NR26/FAAELE/009722' }),
+      invoices,
+    );
+    expect(result).toEqual({
+      allocations: [
+        { invoiceId: 'a', invoiceName: '26/FAAPTR/031059', amountMicros: 1_376_710_000 },
+        { invoiceId: 'b', invoiceName: '26/FAAELE/009722', amountMicros: 1_000_000_000 },
+      ],
+      note: 'Przelew zbiorczy: 26/FAAPTR/031059, 26/FAAELE/009722',
+    });
+  });
+
+  it('kilka numerów w tytule z sumą różną od przelewu zostaje nieprzypisane', () => {
+    const invoices = [openInvoice({ id: 'a', name: 'FV/1/2026' }), openInvoice({ id: 'b', name: 'FV/2/2026' })];
+    const result = matchTransaction(tx({ amount: PLN(1000), remittanceInformation: 'FV/1/2026 FV/2/2026' }), invoices);
+    expect(result.allocations).toEqual([]);
+    expect(result.note).toContain('suma 2460.00 różni się');
   });
 
   it('nie zgaduje przy kilku kandydatach', () => {
@@ -76,31 +106,31 @@ describe('matchTransaction', () => {
       openInvoice({ id: 'b', name: 'X/2', counterpartyName: 'ACME' }),
     ];
     const result = matchTransaction(tx({ counterpartyName: 'ACME' }), invoices);
-    expect(result.invoiceId).toBeNull();
+    expect(result.allocations).toEqual([]);
     expect(result.note).toContain('Kilka faktur');
   });
 
   it('kwota bez potwierdzonego kontrahenta zostaje nieprzypisana', () => {
     const result = matchTransaction(tx({ counterpartyName: 'Ktoś Inny' }), [openInvoice({ id: 'a' })]);
-    expect(result.invoiceId).toBeNull();
+    expect(result.allocations).toEqual([]);
     expect(result.note).toContain('kontrahent się nie zgadza');
   });
 
   it('rdzeń numeru z innym prefiksem dopasowuje tylko przy zgodnej kwocie', () => {
     const invoices = [openInvoice({ id: 'a', name: 'FV 31/09/2026', counterpartyName: 'Euro-Bud' })];
-    expect(matchTransaction(tx({ remittanceInformation: 'FRA 31/09/2026', counterpartyName: 'X' }), invoices)).toEqual({
-      invoiceId: 'a',
+    expect(matchTransaction(tx({ remittanceInformation: 'FRA 31/09/2026', counterpartyName: 'X' }), invoices)).toMatchObject({
+      allocations: [{ invoiceId: 'a' }],
       note: expect.stringContaining('inny prefiks'),
     });
     expect(
       matchTransaction(tx({ amount: PLN(100), remittanceInformation: 'FRA 31/09/2026', counterpartyName: 'X' }), invoices)
-        .invoiceId,
-    ).toBeNull();
+        .allocations,
+    ).toEqual([]);
   });
 
   it('sam rok albo pojedyncza liczba nie są rdzeniem numeru', () => {
     const invoices = [openInvoice({ id: 'a', name: 'FV 2026', counterpartyName: 'Euro-Bud' })];
-    expect(matchTransaction(tx({ remittanceInformation: 'Zapłata 2026', counterpartyName: 'X' }), invoices).invoiceId).toBeNull();
+    expect(matchTransaction(tx({ remittanceInformation: 'Zapłata 2026', counterpartyName: 'X' }), invoices).allocations).toEqual([]);
   });
 
   it('wydatek kartą: dokładna kwota i data faktury ±3 dni, tylko przy jednym kandydacie', () => {
@@ -113,10 +143,10 @@ describe('matchTransaction', () => {
     });
     const dorian = openInvoice({ id: 'd', direction: 'PURCHASE', name: 'FS-133/10/26/OS', grossAmount: PLN(522.75), issueDate: '2026-10-16' });
     const old = openInvoice({ id: 'o', direction: 'PURCHASE', name: 'X/1', grossAmount: PLN(522.75), issueDate: '2026-10-01' });
-    expect(matchTransaction(card, [dorian, old])).toEqual({ invoiceId: 'd', note: expect.stringContaining('data faktury ±3 dni') });
+    expect(matchTransaction(card, [dorian, old])).toMatchObject({ allocations: [{ invoiceId: 'd' }], note: expect.stringContaining('data faktury ±3 dni') });
 
     const twin = openInvoice({ id: 't', direction: 'PURCHASE', name: 'X/2', grossAmount: PLN(522.75), issueDate: '2026-10-14' });
-    expect(matchTransaction(card, [dorian, twin])).toEqual({ invoiceId: null, note: expect.stringContaining('Kilka faktur z tą kwotą i datą') });
+    expect(matchTransaction(card, [dorian, twin])).toMatchObject({ allocations: [], note: expect.stringContaining('Kilka faktur z tą kwotą i datą') });
   });
 
   it('reguła karty nie działa, gdy rachunek odbiorcy należy do innego znanego dostawcy', () => {
@@ -126,12 +156,12 @@ describe('matchTransaction', () => {
       tx({ direction: 'DEBIT', counterpartyAccount: 'PL27114020040000300201355387', counterpartyName: 'Dostawca X' }),
       [other, sameAmount],
     );
-    expect(result.invoiceId).toBeNull();
+    expect(result.allocations).toEqual([]);
   });
 
   it('liczy pozostałą kwotę po wcześniejszej wpłacie częściowej', () => {
     const invoice = openInvoice({ id: 'a', paidAmount: PLN(1000), counterpartyName: 'Klient' });
-    expect(matchTransaction(tx({ amount: PLN(230), counterpartyName: 'Klient' }), [invoice]).invoiceId).toBe('a');
+    expect(matchTransaction(tx({ amount: PLN(230), counterpartyName: 'Klient' }), [invoice]).allocations.map((a) => a.invoiceId)).toEqual(['a']);
   });
 });
 
