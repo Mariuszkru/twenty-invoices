@@ -24,6 +24,8 @@ export type AllocationCandidate = {
   // kwota tej transakcji już przypisana do faktury
   allocatedMicros: number;
   sameCounterparty: boolean;
+  // faktura ma już status Zapłacona (np. opłacona z góry) – przypięcie przelewu jest śladem zapłaty
+  alreadyPaid: boolean;
 };
 
 export type AllocationContext = {
@@ -35,6 +37,9 @@ export type AllocationContext = {
 };
 
 const MAX_CANDIDATES = 100;
+// zapłacone faktury pokazywane w panelu (np. opłacone z góry, do których trzeba przypiąć przelew)
+const PAID_LOOKBACK_DAYS = 180;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 const loadTransaction = async (store: BankStore, transactionId: string) => {
   const transaction = await store.getTransaction(transactionId);
@@ -54,13 +59,16 @@ export const allocationContext = async (store: BankStore, transactionId: string)
   const allocatedByInvoice = new Map<string, number>();
   for (const a of current) allocatedByInvoice.set(a.invoiceId, (allocatedByInvoice.get(a.invoiceId) ?? 0) + a.amount.amountMicros);
 
-  // otwarte faktury pasujące kierunkiem i walutą oraz faktury już przypisane do tej transakcji (także zapłacone)
+  // otwarte faktury pasujące kierunkiem i walutą, zapłacone z ostatnich 180 dni i faktury już przypisane do tej transakcji
   const open = await store.findOpenInvoices();
-  const assigned = await store.getInvoices([...allocatedByInvoice.keys()].filter((id) => !open.some((i) => i.id === id)));
+  const paid = await store.findPaidInvoices(new Date(Date.now() - PAID_LOOKBACK_DAYS * DAY_MS).toISOString().slice(0, 10));
+  const listed = [...open, ...paid];
+  const assigned = await store.getInvoices([...allocatedByInvoice.keys()].filter((id) => !listed.some((i) => i.id === id)));
+  const paidIds = new Set(paid.map((i) => i.id));
   const txAccount = normalizeAccount(transaction.counterpartyAccount);
   const txName = normalizeName(transaction.counterpartyName);
 
-  const candidates = [...open, ...assigned]
+  const candidates = [...listed, ...assigned]
     .filter((i) => allocatedByInvoice.has(i.id) || (fitsTransaction(transaction, i) && (i.grossAmount?.amountMicros ?? 0) > 0))
     .map((i): AllocationCandidate => {
       const allocated = allocatedByInvoice.get(i.id) ?? 0;
@@ -73,15 +81,17 @@ export const allocationContext = async (store: BankStore, transactionId: string)
         counterpartyName: i.counterpartyName,
         issueDate: i.issueDate,
         grossMicros: i.grossAmount?.amountMicros ?? 0,
-        // paidAmount otwartej faktury zawiera już rozliczenia tej transakcji – oddajemy je do puli
+        // paidAmount (suma rozliczeń) zawiera już rozliczenia tej transakcji – oddajemy je do puli
         remainingMicros: Math.max(0, remainingMicros(i) + allocated),
         allocatedMicros: allocated,
         sameCounterparty,
+        alreadyPaid: paidIds.has(i.id),
       };
     })
     .sort(
       (a, b) =>
         Number(b.allocatedMicros > 0) - Number(a.allocatedMicros > 0) ||
+        Number(a.alreadyPaid) - Number(b.alreadyPaid) ||
         Number(b.sameCounterparty) - Number(a.sameCounterparty) ||
         (b.issueDate ?? '').localeCompare(a.issueDate ?? ''),
     )

@@ -33,9 +33,9 @@ export type BankStore = {
   createAllocations: (records: AllocationRecord[]) => Promise<void>;
   listTransactionAllocations: (transactionId: string) => Promise<StoredAllocation[]>;
   deleteAllocations: (ids: string[]) => Promise<void>;
-  // faktury obu kierunków ze statusem Niezapłacona/Częściowo
+  // faktury obu kierunków ze statusem Niezapłacona/Częściowo; paidAmount = suma rozliczeń (bez pominiętych transakcji)
   findOpenInvoices: () => Promise<OpenInvoice[]>;
-  // faktury już zapłacone (wystawione od `since`); paidAmount = suma rozliczeń (bez pominiętych transakcji)
+  // faktury już zapłacone (wystawione od `since`); paidAmount jak wyżej
   findPaidInvoices: (since: string) => Promise<OpenInvoice[]>;
   getInvoices: (ids: string[]) => Promise<OpenInvoice[]>;
   getInvoiceGross: (invoiceId: string) => Promise<Currency | null>;

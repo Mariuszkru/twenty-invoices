@@ -85,6 +85,15 @@ export const createMemoryBankStore = (invoices: MemoryInvoice[]) => {
       .filter((a) => a.invoiceId === invoiceId && statusOf(a.transactionId) !== MATCH_STATUS.IGNORED)
       .reduce((sum, a) => sum + a.amount.amountMicros, 0);
 
+  // jak w Twenty: paidAmount do dopasowania to suma rozliczeń, nie pole faktury
+  const withAllocatedAmount = (i: MemoryInvoice): MemoryInvoice => {
+    const linked = allocatedTo(i.id);
+    return {
+      ...structuredClone(i),
+      paidAmount: linked && i.grossAmount ? { amountMicros: linked, currencyCode: i.grossAmount.currencyCode } : null,
+    };
+  };
+
   const store: BankStore = {
     findExistingTransactionIds: async (ids) =>
       new Set(transactions.filter((t) => ids.includes(t.externalId)).map((t) => t.externalId)),
@@ -112,18 +121,9 @@ export const createMemoryBankStore = (invoices: MemoryInvoice[]) => {
     deleteAllocations: async (ids) => {
       for (let i = allocations.length - 1; i >= 0; i--) if (ids.includes(allocations[i].id)) allocations.splice(i, 1);
     },
-    findOpenInvoices: async () =>
-      invoices.filter((i) => i.paymentStatus !== 'PAID').map((i) => structuredClone(i)),
+    findOpenInvoices: async () => invoices.filter((i) => i.paymentStatus !== 'PAID').map(withAllocatedAmount),
     findPaidInvoices: async (since) =>
-      invoices
-        .filter((i) => i.paymentStatus === 'PAID' && (i.issueDate ?? '') >= since)
-        .map((i) => {
-          const linked = allocatedTo(i.id);
-          return {
-            ...structuredClone(i),
-            paidAmount: linked && i.grossAmount ? { amountMicros: linked, currencyCode: i.grossAmount.currencyCode } : null,
-          };
-        }),
+      invoices.filter((i) => i.paymentStatus === 'PAID' && (i.issueDate ?? '') >= since).map(withAllocatedAmount),
     getInvoices: async (ids) => invoices.filter((i) => ids.includes(i.id)).map((i) => structuredClone(i)),
     getInvoiceGross: async (id) => invoices.find((i) => i.id === id)?.grossAmount ?? null,
     listInvoiceAllocations: async (id) =>

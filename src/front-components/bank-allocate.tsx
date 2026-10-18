@@ -17,6 +17,7 @@ type Candidate = {
   remainingMicros: number;
   allocatedMicros: number;
   sameCounterparty: boolean;
+  alreadyPaid: boolean;
 };
 
 type Context = {
@@ -221,9 +222,11 @@ const BankAllocate = () => {
                   <div style={{ fontWeight: theme.font.weight.medium, wordBreak: 'break-word' }}>
                     {c.name ?? 'bez numeru'}
                     {c.sameCounterparty && <span style={{ ...muted, color: theme.color.green }}> · ten kontrahent</span>}
+                    {c.alreadyPaid && <span style={muted}> · zapłacona</span>}
                   </div>
                   <div style={{ ...muted, wordBreak: 'break-word' }}>
-                    {c.counterpartyName ?? '—'} · {formatDate(c.issueDate)} · pozostało {money(c.remainingMicros, currency)}
+                    {c.counterpartyName ?? '—'} · {formatDate(c.issueDate)} ·{' '}
+                    {c.alreadyPaid ? 'nierozliczone z wyciągu' : 'pozostało'} {money(c.remainingMicros, currency)}
                   </div>
                 </div>
                 {checked && (

@@ -72,6 +72,27 @@ describe('panel Rozlicz przelew', () => {
     expect(context.candidates[0]).toMatchObject({ id: 'a', allocatedMicros: 1_000_000_000, remainingMicros: 1_000_000_000 });
   });
 
+  it('faktura opłacona z góry (pole Zapłacono z FA(3), status Zapłacona) da się przypiąć pełną kwotą', async () => {
+    const { memory, transactionId } = await setup();
+    memory.invoices.push(
+      openInvoice({
+        id: 'pre',
+        name: 'FV/2026/10/802',
+        direction: 'PURCHASE',
+        grossAmount: PLN(1500),
+        paidAmount: PLN(1500),
+        paymentStatus: 'PAID',
+        paidAt: '2026-10-14',
+        issueDate: new Date().toISOString().slice(0, 10),
+      }),
+    );
+    const context = await allocationContext(memory.store, transactionId);
+    expect(context.candidates[context.candidates.length - 1]).toMatchObject({ id: 'pre', alreadyPaid: true, remainingMicros: 1_500_000_000 });
+
+    await saveManualAllocation(memory.store, transactionId, [{ invoiceId: 'pre', amountMicros: 1_500_000_000 }]);
+    expect(memory.invoices[memory.invoices.length - 1]).toMatchObject({ paymentStatus: 'PAID', paidAt: '2026-10-10', paidAmount: PLN(1500) });
+  });
+
   it('odrzuca sumę większą niż transakcja i fakturę w złym kierunku', async () => {
     const { memory, transactionId } = await setup();
     await expect(

@@ -89,6 +89,21 @@ export const createTwentyBankStore = (): BankStore => {
     return totals;
   };
 
+  // paidAmount do dopasowania = suma rozliczeń z wyciągu, a nie pole faktury: to pole bywa wypełnione z FA(3)
+  // (faktura opłacona z góry) albo ręcznie i wtedy blokowałoby przypięcie przelewu
+  const withAllocatedAmount = async (rows: OpenInvoice[]): Promise<OpenInvoice[]> => {
+    const allocated = await allocatedByInvoice(rows.map((r) => r.id));
+    return rows.map((i) => {
+      const grossAmount = currencyOrNull(i.grossAmount);
+      const paid = allocated.get(i.id);
+      return {
+        ...i,
+        grossAmount,
+        paidAmount: paid && grossAmount ? { amountMicros: paid, currencyCode: grossAmount.currencyCode } : null,
+      };
+    });
+  };
+
   return {
     findExistingTransactionIds: async (externalIds) => {
       const found = new Set<string>();
@@ -170,36 +185,23 @@ export const createTwentyBankStore = (): BankStore => {
       }
     },
 
-    findOpenInvoices: async () => {
-      const rows = await queryAll<OpenInvoice>(
-        'ksefInvoices',
-        { filter: { paymentStatus: { in: [PAYMENT_STATUS.UNPAID, PAYMENT_STATUS.PARTIAL] } } },
-        OPEN_INVOICE_SELECTION,
-      );
-      return rows.map((i) => ({
-        ...i,
-        grossAmount: currencyOrNull(i.grossAmount),
-        paidAmount: currencyOrNull(i.paidAmount),
-      }));
-    },
+    findOpenInvoices: async () =>
+      withAllocatedAmount(
+        await queryAll<OpenInvoice>(
+          'ksefInvoices',
+          { filter: { paymentStatus: { in: [PAYMENT_STATUS.UNPAID, PAYMENT_STATUS.PARTIAL] } } },
+          OPEN_INVOICE_SELECTION,
+        ),
+      ),
 
-    findPaidInvoices: async (since) => {
-      const rows = await queryAll<OpenInvoice>(
-        'ksefInvoices',
-        { filter: { paymentStatus: { eq: PAYMENT_STATUS.PAID }, issueDate: { gte: since } } },
-        OPEN_INVOICE_SELECTION,
-      );
-      const allocated = await allocatedByInvoice(rows.map((r) => r.id));
-      return rows.map((i) => {
-        const grossAmount = currencyOrNull(i.grossAmount);
-        const paid = allocated.get(i.id);
-        return {
-          ...i,
-          grossAmount,
-          paidAmount: paid && grossAmount ? { amountMicros: paid, currencyCode: grossAmount.currencyCode } : null,
-        };
-      });
-    },
+    findPaidInvoices: async (since) =>
+      withAllocatedAmount(
+        await queryAll<OpenInvoice>(
+          'ksefInvoices',
+          { filter: { paymentStatus: { eq: PAYMENT_STATUS.PAID }, issueDate: { gte: since } } },
+          OPEN_INVOICE_SELECTION,
+        ),
+      ),
 
     getInvoices: async (ids) => {
       if (ids.length === 0) return [];

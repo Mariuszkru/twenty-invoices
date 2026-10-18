@@ -2,6 +2,11 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.7.1
+
+- The remaining amount used for matching and in the "Rozlicz przelew" panel comes from bank allocations, not from the invoice's "Zapłacono" field. Invoices paid in advance (the field filled from FA(3)) or marked paid by hand can now take the transfer
+- The panel also lists invoices already marked paid from the last 180 days, after the open ones, tagged "zapłacona". Allocating the full amount sets the payment date from the bank
+
 ## 0.7.0
 
 - New `paymentAllocation` object ("Rozliczenia płatności"): the part of a bank transaction that pays an invoice. One transaction can pay several invoices (collective transfer) and an invoice can still have several payments. It replaces the `invoice` relation on `bankTransaction` and `bankTransactions` on `ksefInvoice` (now `allocations` and `paymentAllocations`). Invoice payment status is the sum of its allocations, skipping ignored transactions
