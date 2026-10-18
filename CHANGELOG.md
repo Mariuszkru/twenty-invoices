@@ -2,6 +2,12 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.8.0
+
+- Statement fetch times are set in the new `BANK_SYNC_TIMES` app variable (Polish time, comma-separated, at most 3; default `12:00,15:40,18:00`, 30 minutes after the PKO BP incoming Elixir sessions). The `bank-sync` cron wakes every 10 minutes and calls the bank only when a configured time has passed and was not handled yet; missed times collapse into one fetch and earlier days are not replayed
+- "Pobierz teraz" works once per day (Polish calendar day), enforced on the server. A run that fails before reaching the bank does not use up the day. Together with 3 scheduled fetches this stays within the PSD2 limit of 4 unattended requests per day
+- The bank panel shows the schedule, the next fetch time, and that the manual fetch was used today
+
 ## 0.7.5
 
 - A long invoice number starting with a letter (8+ characters, e.g. "SM26-2206292078") also matches when the bank glues letters in front of it ("FVSM26-…"), so such collective refunds split correctly

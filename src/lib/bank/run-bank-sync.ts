@@ -39,6 +39,9 @@ export const BANK_KV_KEYS = {
   lock: 'bank:lock',
   lastRun: 'bank:last-run',
   state: 'bank:state',
+  // ostatni obsłużony termin harmonogramu ("YYYY-MM-DD HH:MM") i data ręcznego pobrania (czas polski)
+  lastSlot: 'bank:last-slot',
+  manualDate: 'bank:manual-date',
   cursor: (accountUid: string) => `bank:cursor:${accountUid}`,
   consentWarned: (days: number) => `bank:consent-warned:${days}`,
 };

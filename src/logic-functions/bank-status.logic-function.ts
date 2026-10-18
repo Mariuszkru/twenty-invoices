@@ -3,6 +3,7 @@ import { defineLogicFunction } from 'twenty-sdk/define';
 import { ID } from 'src/constants/ids';
 import { appKv, loadBankSession, readBankConfig } from 'src/lib/bank/bank-from-env';
 import { BANK_KV_KEYS, type BankSyncSummary } from 'src/lib/bank/run-bank-sync';
+import { manualFetchAllowed, nextSlot, parseSyncTimes } from 'src/lib/bank/schedule';
 
 // Stan połączenia dla panelu w CRM: front component nie widzi sekretnych zmiennych, więc dostaje tylko
 // to, co można pokazać (bank, rachunki, ważność zgody, ostatni przebieg).
@@ -21,6 +22,8 @@ export default defineLogicFunction({
     const lastRun = await appKv.get<BankSyncSummary>(BANK_KV_KEYS.lastRun);
     if ('error' in config) return { configured: false, message: config.error, lastRun };
     const session = loadBankSession(config);
+    const now = new Date();
+    const { times } = parseSyncTimes(process.env.BANK_SYNC_TIMES);
     return {
       configured: true,
       aspsp: config.aspsp,
@@ -28,6 +31,8 @@ export default defineLogicFunction({
       validUntil: session?.validUntil ?? null,
       accounts: session?.accounts.map((a) => a.iban ?? a.uid) ?? [],
       lastRun,
+      schedule: { times, next: nextSlot(times, now) },
+      manualAvailable: manualFetchAllowed(await appKv.get<string>(BANK_KV_KEYS.manualDate), now),
     };
   },
 });

@@ -22,7 +22,7 @@ The first run looks back 90 days. Sync cursors, rate counters, a lock and the la
 
 ## Bank statement
 
-The `bank-sync` function runs every day at 05:00 UTC, one hour before the payment reminders.
+The `bank-sync` function fetches the statement at the times set in `BANK_SYNC_TIMES` (Polish time, at most 3 a day, default `12:00,15:40,18:00`, 30 minutes after the PKO BP incoming Elixir sessions). Its cron wakes every 10 minutes and calls the bank only when a configured time has passed. "Pobierz teraz" in the bank panel adds one manual fetch per day, so the total stays within the PSD2 limit of 4 unattended requests per day.
 
 1. It fetches booked transactions (`BOOK`) of every account in the consent. The window starts 5 days before the previous run, because banks book late. The first run looks back 30 days.
 2. Each transaction becomes a `bankTransaction` record, deduplicated by account and `entry_reference`. Matches are stored as `paymentAllocation` records (transaction, invoice, amount), so one transfer can pay several invoices.
@@ -54,6 +54,7 @@ Set these app variables in Twenty:
 | `ENABLEBANKING_PRIVATE_KEY` | Private RSA key (PEM) of the Enable Banking application (secret) |
 | `ENABLEBANKING_ASPSP` | Bank name exactly as Enable Banking lists it |
 | `ENABLEBANKING_COUNTRY` | Bank country, default `PL` |
+| `BANK_SYNC_TIMES` | Statement fetch times, Polish time, comma-separated, at most 3 (default `12:00,15:40,18:00`) |
 | `ENABLEBANKING_SESSION` | Written by the app after the bank authorization (secret). Do not edit |
 
 Company matching uses the `company.nip` field from the `regon-nip` app. When that field is missing, invoices keep the counterparty NIP and name as text only.

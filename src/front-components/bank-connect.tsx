@@ -26,6 +26,8 @@ type Status = {
   validUntil?: string | null;
   accounts?: string[];
   lastRun: LastRun | null;
+  schedule?: { times: string[]; next: { date: string; time: string } | null };
+  manualAvailable?: boolean;
 };
 
 type ConnectResponse = { ok: boolean; url?: string; validUntil?: string; message?: string };
@@ -113,9 +115,10 @@ const BankConnect = () => {
       }}
     >
       <div style={{ ...box, color: theme.font.color.secondary, lineHeight: 1.5 }}>
-        Wyciąg z rachunku firmowego jest pobierany przez Enable Banking codziennie rano. Wpływy są dopasowywane do faktur
-        sprzedaży, wydatki do faktur zakupowych, a pewne dopasowania od razu oznaczają fakturę jako zapłaconą. Zgoda banku
-        (PSD2) wygasa najpóźniej po 180 dniach i trzeba ją wtedy odnowić.
+        Wyciąg z rachunku firmowego jest pobierany przez Enable Banking o godzinach ustawionych w zmiennej
+        BANK_SYNC_TIMES, a ręcznie raz dziennie. Wpływy są dopasowywane do faktur sprzedaży, wydatki do faktur zakupowych,
+        a pewne dopasowania od razu oznaczają fakturę jako zapłaconą. Zgoda banku (PSD2) wygasa najpóźniej po 180 dniach
+        i trzeba ją wtedy odnowić.
       </div>
 
       {status && (
@@ -141,6 +144,21 @@ const BankConnect = () => {
                 <div style={{ wordBreak: 'break-all' }}>
                   <span style={label}>Rachunki: </span>
                   {status.accounts.join(', ')}
+                </div>
+              )}
+              {status.schedule && (
+                <div>
+                  <span style={label}>Pobieranie automatyczne: </span>
+                  {status.schedule.times.join(', ')}
+                  {status.schedule.next && (
+                    <span style={label}>
+                      {' '}
+                      · następne {status.schedule.next.time}
+                      {status.schedule.next.date !== new Date().toLocaleDateString('en-CA', { timeZone: 'Europe/Warsaw' })
+                        ? ' jutro'
+                        : ''}
+                    </span>
+                  )}
                 </div>
               )}
               {status.lastRun && (
@@ -195,16 +213,19 @@ const BankConnect = () => {
         <Button
           variant="outline"
           color="neutral"
-          disabled={!status?.connected || busy !== null}
+          disabled={!status?.connected || status?.manualAvailable === false || busy !== null}
           loading={busy === 'sync'}
           onClick={syncNow}
         >
-          Pobierz teraz
+          {status?.manualAvailable === false ? 'Pobrano dziś ręcznie' : 'Pobierz teraz'}
         </Button>
         <Button variant="ghost" color="neutral" startIcon={<IconRefresh size={14} />} disabled={busy !== null} onClick={loadStatus}>
           Odśwież
         </Button>
       </div>
+      {status?.manualAvailable === false && (
+        <div style={label}>Ręczne pobranie wykorzystane dziś – dostępne jutro (limit PSD2: 4 zapytania dziennie).</div>
+      )}
     </div>
   );
 };

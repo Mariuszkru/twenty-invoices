@@ -48,7 +48,8 @@ Follow these steps to get your app running locally.
    - Activate the application by linking your company account.
 2. In the app settings in Twenty, set `CRM_URL`, `ENABLEBANKING_APP_ID`, `ENABLEBANKING_PRIVATE_KEY` (the content of `private.pem`) and `ENABLEBANKING_ASPSP`.
 3. Open the Transakcje bankowe view and run the "Połącz konto bankowe (Enable Banking)" command. Click "Połącz z bankiem", log in to the bank and approve access. The bank returns to a page that confirms the connection.
-4. Click "Pobierz teraz" in the same panel to fetch the first statement, or wait for the morning run.
+4. Optionally change `BANK_SYNC_TIMES` (default `12:00,15:40,18:00`, Polish time, at most 3).
+5. Click "Pobierz teraz" in the same panel to fetch the first statement, or wait for the next scheduled time. The manual fetch works once per day.
 
 Keep `private.pem` out of the repository. Anyone with this key and an active session can read the account history.
 

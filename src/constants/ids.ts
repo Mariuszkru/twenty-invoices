@@ -101,6 +101,7 @@ export const ID = {
   varEbAspsp: '870e8ef7-2ae7-4ae9-ac9d-f7295a0d32c7',
   varEbCountry: '13ebd0bd-d6d4-4d14-afed-12305447cb07',
   varEbSession: 'a6d55504-e8e6-4e69-8714-4bd5f30bc5df',
+  varBankSyncTimes: '43e65296-94e5-45fd-a54e-332b8ed9066b',
 
   fnSyncCron: 'e34bb764-0155-4820-82fe-734e797ef86f',
   fnSyncNow: '9c089662-b2d6-4d0b-818a-980dc8323c21',

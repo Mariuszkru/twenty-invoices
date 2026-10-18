@@ -86,6 +86,13 @@ export default defineApplication({
       description: 'Dwuliterowy kod kraju banku.',
       value: 'PL',
     },
+    BANK_SYNC_TIMES: {
+      universalIdentifier: ID.varBankSyncTimes,
+      label: 'Enable Banking: godziny pobierania wyciągu',
+      description:
+        'Godziny automatycznego pobierania w czasie polskim, oddzielone przecinkami, najwyżej 3 (np. 30 min po sesjach Elixir). Razem z ręcznym pobraniem raz dziennie mieści się w limicie 4 zapytań PSD2.',
+      value: '12:00,15:40,18:00',
+    },
     ENABLEBANKING_SESSION: {
       universalIdentifier: ID.varEbSession,
       label: 'Enable Banking: sesja (automatyczna)',
