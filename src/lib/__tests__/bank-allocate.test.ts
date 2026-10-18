@@ -42,6 +42,15 @@ describe('panel Rozlicz przelew', () => {
     ]);
   });
 
+  it('faktura z kwotą równą transakcji jest proponowana jako pierwsza', async () => {
+    const { memory, transactionId } = await setup();
+    memory.invoices.push(
+      openInvoice({ id: 'exact', name: 'FZ/9', direction: 'PURCHASE', grossAmount: PLN(1500), counterpartyName: 'Ktoś', issueDate: '2026-09-01' }),
+    );
+    const context = await allocationContext(memory.store, transactionId);
+    expect(context.candidates[0]).toMatchObject({ id: 'exact', sameAmount: true, sameCounterparty: false });
+  });
+
   it('zapisuje przelew zbiorczy na dwie faktury i przelicza ich płatność', async () => {
     const { memory, transactionId } = await setup();
     const result = await saveManualAllocation(memory.store, transactionId, [
@@ -87,7 +96,7 @@ describe('panel Rozlicz przelew', () => {
       }),
     );
     const context = await allocationContext(memory.store, transactionId);
-    expect(context.candidates[context.candidates.length - 1]).toMatchObject({ id: 'pre', alreadyPaid: true, remainingMicros: 1_500_000_000 });
+    expect(context.candidates.find((c) => c.id === 'pre')).toMatchObject({ alreadyPaid: true, sameAmount: true, remainingMicros: 1_500_000_000 });
 
     await saveManualAllocation(memory.store, transactionId, [{ invoiceId: 'pre', amountMicros: 1_500_000_000 }]);
     expect(memory.invoices[memory.invoices.length - 1]).toMatchObject({ paymentStatus: 'PAID', paidAt: '2026-10-10', paidAmount: PLN(1500) });

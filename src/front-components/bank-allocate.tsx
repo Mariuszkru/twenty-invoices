@@ -18,6 +18,7 @@ type Candidate = {
   allocatedMicros: number;
   sameCounterparty: boolean;
   alreadyPaid: boolean;
+  sameAmount: boolean;
 };
 
 type Context = {
@@ -237,6 +238,7 @@ const BankAllocate = () => {
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div style={{ fontWeight: theme.font.weight.medium, wordBreak: 'break-word' }}>
                     {c.name ?? 'bez numeru'}
+                    {c.sameAmount && <span style={{ ...muted, color: theme.color.blue }}> · ta sama kwota</span>}
                     {c.sameCounterparty && <span style={{ ...muted, color: theme.color.green }}> · ten kontrahent</span>}
                     {c.alreadyPaid && <span style={muted}> · zapłacona</span>}
                   </div>

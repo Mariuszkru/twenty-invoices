@@ -26,6 +26,8 @@ export type AllocationCandidate = {
   sameCounterparty: boolean;
   // faktura ma już status Zapłacona (np. opłacona z góry) – przypięcie przelewu jest śladem zapłaty
   alreadyPaid: boolean;
+  // pozostała kwota faktury równa kwocie transakcji – najbardziej prawdopodobny wybór
+  sameAmount: boolean;
 };
 
 export type AllocationContext = {
@@ -75,6 +77,7 @@ export const allocationContext = async (store: BankStore, transactionId: string)
       const sameCounterparty =
         (txAccount !== null && normalizeAccount(i.bankAccount) === txAccount) ||
         (txName.length >= 4 && normalizeName(i.counterpartyName) === txName);
+      const remaining = Math.max(0, remainingMicros(i) + allocated);
       return {
         id: i.id,
         name: i.name,
@@ -82,15 +85,17 @@ export const allocationContext = async (store: BankStore, transactionId: string)
         issueDate: i.issueDate,
         grossMicros: i.grossAmount?.amountMicros ?? 0,
         // paidAmount (suma rozliczeń) zawiera już rozliczenia tej transakcji – oddajemy je do puli
-        remainingMicros: Math.max(0, remainingMicros(i) + allocated),
+        remainingMicros: remaining,
         allocatedMicros: allocated,
         sameCounterparty,
         alreadyPaid: paidIds.has(i.id),
+        sameAmount: Math.abs(remaining - transaction.amount.amountMicros) < AMOUNT_TOLERANCE_MICROS,
       };
     })
     .sort(
       (a, b) =>
         Number(b.allocatedMicros > 0) - Number(a.allocatedMicros > 0) ||
+        Number(b.sameAmount) - Number(a.sameAmount) ||
         Number(a.alreadyPaid) - Number(b.alreadyPaid) ||
         Number(b.sameCounterparty) - Number(a.sameCounterparty) ||
         (b.issueDate ?? '').localeCompare(a.issueDate ?? ''),

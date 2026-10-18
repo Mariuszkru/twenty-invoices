@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.7.3
+
+- The "Rozlicz przelew" panel proposes first the invoices whose remaining amount equals the transaction amount, tagged "ta sama kwota"
+
 ## 0.7.2
 
 - The "Rozlicz przelew" panel hides invoices that are already settled (marked paid or with nothing left to pay). They show up when you search by number or tick "Pokaż faktury już zapłacone"; invoices already allocated to the transaction are always shown
