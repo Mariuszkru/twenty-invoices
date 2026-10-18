@@ -1,8 +1,7 @@
-import { DIRECTION, DUE_DATE_SOURCE, PAYMENT_STATUS, SYNC_STATUS } from 'src/constants/options';
+import { DIRECTION, DUE_DATE_SOURCE, PAYMENT_STATUS, SOURCE, SYNC_STATUS } from 'src/constants/options';
 import { sumMicros } from 'src/lib/decimal';
 import type { ParsedLine } from 'src/lib/ksef/fa3-parser';
 import { findBuyerPersonId } from 'src/lib/manual/match-person';
-import type { ManualSource } from 'src/lib/manual/parse-file';
 import type { ManualInvoice, ManualLine } from 'src/lib/manual/types';
 import { errorMessage } from 'src/lib/sync/import-details';
 import { lineRecord } from 'src/lib/sync/mapping';
@@ -49,13 +48,13 @@ const toParsedLine = (invoice: ManualInvoice, line: ManualLine, index: number): 
 });
 
 // Pola nagłówka wynikające z pliku – wspólne dla nowej i odświeżanej faktury.
-const headerFromFile = (invoice: ManualInvoice, source: ManualSource) => {
+const headerFromFile = (invoice: ManualInvoice) => {
   const net = sumMicros(invoice.lines.map((l) => l.netMicros));
   const vat = sumMicros(invoice.lines.map((l) => l.vatMicros));
   const netPln = sumMicros(invoice.lines.map((l) => l.netPlnMicros));
   return {
     name: invoice.number,
-    source: source as string,
+    source: SOURCE.MANUAL as string,
     direction: DIRECTION.SALE,
     invoiceType: invoice.isCorrection ? 'KOR' : 'VAT',
     issueDate: invoice.issueDate,
@@ -76,10 +75,9 @@ const headerFromFile = (invoice: ManualInvoice, source: ManualSource) => {
 
 export const manualInvoiceRecord = (
   invoice: ManualInvoice,
-  source: ManualSource,
   links: { personId: string | null; correctedInvoiceId: string | null },
 ) => ({
-  ...headerFromFile(invoice, source),
+  ...headerFromFile(invoice),
   ksefNumber: null,
   personId: links.personId,
   companyId: null,
@@ -93,7 +91,6 @@ export type ManualInvoiceRecord = ReturnType<typeof manualInvoiceRecord>;
 export type ManualInvoiceUpdate = Partial<ManualInvoiceRecord>;
 
 export type ManualImportResult = {
-  source: ManualSource;
   created: string[];
   // już były w CRM – dane i pozycje odświeżone z pliku
   updated: string[];
@@ -103,10 +100,9 @@ export type ManualImportResult = {
 
 export const importManualInvoices = async (
   store: InvoiceStore,
-  source: ManualSource,
   invoices: ManualInvoice[],
 ): Promise<ManualImportResult> => {
-  const result: ManualImportResult = { source, created: [], updated: [], failed: [], linkedToPerson: 0 };
+  const result: ManualImportResult = { created: [], updated: [], failed: [], linkedToPerson: 0 };
   const numbers = invoices.flatMap((i) => (i.correctedNumber ? [i.number, i.correctedNumber] : [i.number]));
   const known = await store.findManualInvoiceIds([...new Set(numbers)]);
   const seen = new Set<string>();
@@ -125,13 +121,13 @@ export const importManualInvoices = async (
       const correctedInvoiceId = invoice.correctedNumber ? (known.get(invoice.correctedNumber) ?? null) : null;
       if (invoiceId === null) {
         invoiceId = await store.createManualInvoice(
-          manualInvoiceRecord(invoice, source, { personId, correctedInvoiceId }),
+          manualInvoiceRecord(invoice, { personId, correctedInvoiceId }),
         );
         known.set(invoice.number, invoiceId);
       } else {
         const paymentMethod = paymentMethodOf(invoice.paymentMethod);
         await store.updateManualInvoice(invoiceId, {
-          ...headerFromFile(invoice, source),
+          ...headerFromFile(invoice),
           ...(personId ? { personId } : {}),
           ...(correctedInvoiceId ? { correctedInvoiceId } : {}),
           ...(paymentMethod ? { paymentMethod } : {}),

@@ -2,7 +2,7 @@ import { CoreApiClient } from 'twenty-client-sdk/core';
 import { MetadataApiClient } from 'twenty-client-sdk/metadata';
 
 import { ID } from 'src/constants/ids';
-import { DIRECTION, MANUAL_SOURCES, PAYMENT_STATUS, SOURCE, SYNC_STATUS } from 'src/constants/options';
+import { DIRECTION, PAYMENT_STATUS, SOURCE, SYNC_STATUS } from 'src/constants/options';
 import type { InvoiceSummary } from 'src/lib/notify/messages';
 import type { InvoiceStore, PendingInvoice } from 'src/lib/sync/store';
 
@@ -191,7 +191,7 @@ export const createTwentyStore = (): InvoiceStore => {
       for (const part of chunks(numbers, 200)) {
         const result = await client.query({
           ksefInvoices: {
-            __args: { filter: { source: { in: MANUAL_SOURCES }, name: { in: part } }, first: 200 },
+            __args: { filter: { source: { eq: SOURCE.MANUAL }, name: { in: part } }, first: 200 },
             edges: { node: { id: true, name: true } },
           },
         });

@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.5.1
+
+- `source` has only two values: `KSEF` (KSeF) and `MANUAL` (Import manualny). The import format (enova or Symfonia) is no longer stored on the invoice; it is still returned by `ksef-import-xml` and written to its log. Existing `ENOVA`/`SYMFONIA` invoices were moved to `MANUAL` before the old options were removed
+
 ## 0.5.0
 
 - Manual import also reads the Symfonia text exchange format (exported e.g. by Systim, windows-1250). Sales documents carry real line items: name, quantity, unit, unit net price and VAT rate. Cancelled and non-sales documents are skipped. The parser follows the Symfonia "Import specjalny (format 3.0)" spec:

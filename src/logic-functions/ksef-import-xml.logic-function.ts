@@ -15,10 +15,10 @@ const handler = async (event: { body: object | null }) => {
   const { fileName, contentBase64 } = (event.body ?? {}) as ImportBody;
   if (!contentBase64) return { ok: false, message: 'Brak pliku.' };
   try {
-    const { source, invoices } = parseImportFile(decodeImportFile(Buffer.from(contentBase64, 'base64')));
-    const result = await importManualInvoices(createTwentyStore(), source, invoices);
-    console.log(`[ksef-import-xml] ${JSON.stringify({ fileName, ...result })}`);
-    return { ok: true, ...result };
+    const { format, invoices } = parseImportFile(decodeImportFile(Buffer.from(contentBase64, 'base64')));
+    const result = await importManualInvoices(createTwentyStore(), invoices);
+    console.log(`[ksef-import-xml] ${JSON.stringify({ fileName, format, ...result })}`);
+    return { ok: true, format, ...result };
   } catch (e) {
     if (e instanceof ManualImportError) return { ok: false, message: e.message };
     console.error(`[ksef-import-xml] ${fileName}: ${errorMessage(e)}`);

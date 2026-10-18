@@ -1,9 +1,8 @@
-import { SOURCE } from 'src/constants/options';
 import { parseEnovaXml } from 'src/lib/manual/enova-parser';
 import { parseSymfoniaText } from 'src/lib/manual/symfonia-parser';
 import { ManualImportError, type ManualInvoice } from 'src/lib/manual/types';
 
-export type ManualSource = typeof SOURCE.ENOVA | typeof SOURCE.SYMFONIA;
+export type ImportFormat = 'ENOVA' | 'SYMFONIA';
 
 // Kodowanie: deklaracja z nagłówka XML; bez niej UTF-8, a gdy plik nim nie jest – windows-1250 (Symfonia, Systim).
 export const decodeImportFile = (bytes: Uint8Array): string => {
@@ -19,9 +18,9 @@ export const decodeImportFile = (bytes: Uint8Array): string => {
 };
 
 // Format rozpoznajemy po treści, nie po rozszerzeniu: XML z enova albo tekstowy format Symfonii.
-export const parseImportFile = (text: string): { source: ManualSource; invoices: ManualInvoice[] } => {
+export const parseImportFile = (text: string): { format: ImportFormat; invoices: ManualInvoice[] } => {
   const start = text.replace(/^﻿/, '').trimStart();
-  if (start.startsWith('<')) return { source: SOURCE.ENOVA, invoices: parseEnovaXml(start) };
-  if (/^INFO\s*\{/.test(start)) return { source: SOURCE.SYMFONIA, invoices: parseSymfoniaText(start) };
+  if (start.startsWith('<')) return { format: 'ENOVA', invoices: parseEnovaXml(start) };
+  if (/^INFO\s*\{/.test(start)) return { format: 'SYMFONIA', invoices: parseSymfoniaText(start) };
   throw new ManualImportError('Nieznany format pliku. Obsługiwane: XML z enova i eksport tekstowy Symfonii.');
 };

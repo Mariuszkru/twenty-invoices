@@ -41,8 +41,8 @@ const correction: ManualInvoice = {
 
 describe('parseImportFile – enova XML', () => {
   it('dekoduje windows-1250 według deklaracji i czyta rejestr sprzedaży', () => {
-    const { source, invoices } = enova();
-    expect(source).toBe('ENOVA');
+    const { format, invoices } = enova();
+    expect(format).toBe('ENOVA');
     expect(invoices[0]).toEqual({
       number: 'FV 33/09/2026',
       issueDate: '2026-09-21',
@@ -80,8 +80,8 @@ describe('parseImportFile – enova XML', () => {
 
 describe('parseImportFile – Symfonia', () => {
   it('dekoduje windows-1250 bez deklaracji i czyta dokumenty z nazwami pozycji', () => {
-    const { source, invoices } = symfonia();
-    expect(source).toBe('SYMFONIA');
+    const { format, invoices } = symfonia();
+    expect(format).toBe('SYMFONIA');
     expect(invoices).toEqual([
       {
         number: 'FV 26/07/2026',
@@ -145,10 +145,9 @@ describe('parseImportFile – Symfonia', () => {
 describe('importManualInvoices', () => {
   it('tworzy faktury sprzedaży B2C z pozycjami i wiąże nabywcę z osobą', async () => {
     const { store, manualInvoices, lines } = createMemoryStore();
-    const result = await importManualInvoices(store, 'SYMFONIA', symfonia().invoices);
+    const result = await importManualInvoices(store, symfonia().invoices);
 
     expect(result).toEqual({
-      source: 'SYMFONIA',
       created: ['FV 26/07/2026', 'FVZ 3/07/2026'],
       updated: [],
       failed: [],
@@ -158,7 +157,7 @@ describe('importManualInvoices', () => {
     expect(jan).toMatchObject({
       name: 'FV 26/07/2026',
       ksefNumber: null,
-      source: 'SYMFONIA',
+      source: 'MANUAL',
       direction: 'SALE',
       invoiceType: 'VAT',
       personId: 'person-jan',
@@ -184,23 +183,23 @@ describe('importManualInvoices', () => {
 
   it('rejestr VAT z enova bez nazw pozycji dostaje nazwę zastępczą i formę płatności', async () => {
     const { store, manualInvoices, lines } = createMemoryStore();
-    await importManualInvoices(store, 'ENOVA', enova().invoices);
-    expect(manualInvoices[0]).toMatchObject({ source: 'ENOVA', paymentMethod: 'CASH', dueDate: '2026-09-28' });
+    await importManualInvoices(store, enova().invoices);
+    expect(manualInvoices[0]).toMatchObject({ source: 'MANUAL', paymentMethod: 'CASH', dueDate: '2026-09-28' });
     expect(lines.find((l) => l.invoiceId === manualInvoices[0].id)?.name).toBe('Sprzedaż (VAT 8%)');
   });
 
   it('Symfonia po enova aktualizuje te same faktury: nazwy pozycji, bez dubli i bez utraty danych', async () => {
     const { store, manualInvoices, lines } = createMemoryStore();
-    await importManualInvoices(store, 'ENOVA', enova().invoices);
+    await importManualInvoices(store, enova().invoices);
     const fvz = manualInvoices.find((i) => i.name === 'FVZ 3/07/2026')!;
     // zmiany zrobione w CRM po pierwszym imporcie
     Object.assign(fvz, { paymentStatus: 'PAID', personId: 'person-anna-2' });
 
-    const result = await importManualInvoices(store, 'SYMFONIA', symfonia().invoices);
+    const result = await importManualInvoices(store, symfonia().invoices);
     expect(result.created).toEqual(['FV 26/07/2026']);
     expect(result.updated).toEqual(['FVZ 3/07/2026']);
     expect(manualInvoices).toHaveLength(3);
-    expect(fvz).toMatchObject({ source: 'SYMFONIA', paymentStatus: 'PAID', personId: 'person-anna-2', paymentMethod: 'CASH' });
+    expect(fvz).toMatchObject({ source: 'MANUAL', paymentStatus: 'PAID', personId: 'person-anna-2', paymentMethod: 'CASH' });
     expect(lines.filter((l) => l.invoiceId === fvz.id).map((l) => l.name)).toEqual([
       'Montaż klimatyzacji Rotenso Teta 7kW + 2,6kW',
     ]);
@@ -208,8 +207,8 @@ describe('importManualInvoices', () => {
 
   it('ponowny import tego samego pliku niczego nie dubluje', async () => {
     const { store, manualInvoices, lines } = createMemoryStore();
-    await importManualInvoices(store, 'SYMFONIA', symfonia().invoices);
-    const again = await importManualInvoices(store, 'SYMFONIA', symfonia().invoices);
+    await importManualInvoices(store, symfonia().invoices);
+    const again = await importManualInvoices(store, symfonia().invoices);
     expect(again.created).toEqual([]);
     expect(again.updated).toEqual(['FV 26/07/2026', 'FVZ 3/07/2026']);
     expect(manualInvoices).toHaveLength(2);
@@ -218,7 +217,7 @@ describe('importManualInvoices', () => {
 
   it('korekta z tej samej paczki wskazuje fakturę korygowaną i ma ujemną marżę', async () => {
     const { store, manualInvoices, lines } = createMemoryStore();
-    await importManualInvoices(store, 'ENOVA', [correction, ...enova().invoices]);
+    await importManualInvoices(store, [correction, ...enova().invoices]);
     const original = manualInvoices.find((i) => i.name === 'FV 33/09/2026')!;
     const kor = manualInvoices.find((i) => i.name === 'FVK 1/10/2026')!;
     expect(kor).toMatchObject({ invoiceType: 'KOR', correctedInvoiceId: original.id, paymentMethod: 'TRANSFER' });
@@ -238,7 +237,7 @@ describe('importManualInvoices', () => {
         return store.replaceLines(...args);
       },
     };
-    const result = await importManualInvoices(failing, 'SYMFONIA', symfonia().invoices);
+    const result = await importManualInvoices(failing, symfonia().invoices);
     expect(result.failed).toEqual([{ number: 'FV 26/07/2026', error: 'timeout' }]);
     expect(result.created).toEqual(['FVZ 3/07/2026']);
     expect(manualInvoices[0]).toMatchObject({ syncStatus: 'ERROR', syncError: 'Import pozycji nieudany: timeout' });

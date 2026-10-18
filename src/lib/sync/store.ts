@@ -53,7 +53,7 @@ export type InvoiceStore = {
   // null = pole company.nip nie istnieje w workspace (brak dodatku regon-nip)
   findCompanyIdsByNip: (nips: string[]) => Promise<Map<string, string> | null>;
   linkCompanyByNip: (nip: string, companyId: string) => Promise<{ invoices: number; lines: number }>;
-  // numer faktury -> id dla faktur z ręcznego importu (źródła ENOVA, SYMFONIA)
+  // numer faktury -> id dla faktur z ręcznego importu (źródło MANUAL)
   findManualInvoiceIds: (numbers: string[]) => Promise<Map<string, string>>;
   createManualInvoice: (record: ManualInvoiceRecord) => Promise<string>;
   updateManualInvoice: (id: string, data: ManualInvoiceUpdate) => Promise<void>;
