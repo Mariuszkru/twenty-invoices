@@ -35,6 +35,23 @@ Follow these steps to get your app running locally.
 
 4. Open [http://localhost:2020](http://localhost:2020) and log in with the default development credentials: `tim@apple.dev` / `tim@apple.dev`.
 
+## Bank statement (Enable Banking)
+
+1. In the [Enable Banking Control Panel](https://enablebanking.com/cp/applications), register a production application. Restricted mode, which covers only accounts you link yourself, needs no contract.
+   - Generate the key outside the browser and upload only the certificate:
+
+     ```bash
+     openssl req -new -newkey rsa:4096 -nodes -keyout private.pem -x509 -days 3650 -out certificate.pem -subj "/CN=Faktury KSeF"
+     ```
+
+   - Allowed redirect URL: `<CRM_URL>/s/bank/callback`, for example `https://crm.recoop.pl/s/bank/callback`.
+   - Activate the application by linking your company account.
+2. In the app settings in Twenty, set `CRM_URL`, `ENABLEBANKING_APP_ID`, `ENABLEBANKING_PRIVATE_KEY` (the content of `private.pem`) and `ENABLEBANKING_ASPSP`.
+3. Open the Transakcje bankowe view and run the "Połącz konto bankowe (Enable Banking)" command. Click "Połącz z bankiem", log in to the bank and approve access. The bank returns to a page that confirms the connection.
+4. Click "Pobierz teraz" in the same panel to fetch the first statement, or wait for the morning run.
+
+Keep `private.pem` out of the repository. Anyone with this key and an active session can read the account history.
+
 ## Verifying your setup
 
 - `yarn lint` - Lint the project with oxlint

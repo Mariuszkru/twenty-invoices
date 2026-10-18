@@ -2,6 +2,16 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.6.0
+
+- Daily bank statement through Enable Banking (`bank-sync` cron, 05:00 UTC). Booked transactions are stored in the new `bankTransaction` object ("Transakcje bankowe"), deduplicated by account and `entry_reference`
+- Automatic payment matching: credits to sales invoices, debits to purchase invoices, same currency. An invoice number, KSeF number or KSeF payment id in the title, or an exact remaining amount confirmed by the counterparty account (purchases) or name (sales), sets `paymentStatus`, `paidAmount` and `paidAt` from the sum of assigned transactions. Ambiguous transactions stay unassigned with a `matchNote`; unassigned transactions from the last 60 days are retried on each run
+- Assigning a transaction to an invoice by hand, removing it or marking it "Pominięta" recalculates the payment of the affected invoices (`bank-transaction-updated`)
+- "Połącz konto bankowe (Enable Banking)" command: a side panel with the consent status, the bank authorization link and a manual fetch. The bank returns to the public `GET /s/bank/callback` route, protected by a one-time `state`
+- Rocket.Chat: a daily statement summary, a warning 14 and 3 days before the consent expires, and a message when there is no consent or a run fails
+- New app variables `ENABLEBANKING_APP_ID`, `ENABLEBANKING_PRIVATE_KEY`, `ENABLEBANKING_ASPSP`, `ENABLEBANKING_COUNTRY` and the automatic `ENABLEBANKING_SESSION`
+- "Transakcje bankowe" and "Nieprzypisane transakcje" views in the Faktury KSeF folder; `bankTransactions` relation on `ksefInvoice`
+
 ## 0.5.2
 
 - The "Importuj faktury spoza KSeF (Symfonia)" command is shown in the Faktury KSeF object context instead of the Workspace section

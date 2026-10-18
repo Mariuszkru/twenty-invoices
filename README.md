@@ -9,6 +9,7 @@ A Twenty app that imports every sales and purchase invoice from the Polish Natio
 - `ksefInvoiceLine` object: one record per `FaWiersz` with quantity, prices, VAT rate and codes. It also stores `marginEffectPln`, a signed net amount in PLN: sales count as positive and purchases as negative. A "before correction" line flips its sign. Foreign currencies use the rate printed on the invoice, or the NBP rate from the previous business day.
 - Fields ready for margin work: `costCategory` and `allocationStatus`, plus the "Koszty do przypisania" (costs to assign) view.
 - The app settings page shows a health banner with the result of the last sync.
+- Daily bank statement through Enable Banking (PSD2): incoming payments are matched to sales invoices and outgoing payments to purchase invoices. A confident match marks the invoice paid. See [Bank statement](#bank-statement).
 
 ## How the sync works
 
@@ -19,6 +20,20 @@ KSeF allows only about 64 XML downloads per hour in production, so each run has 
 
 The first run looks back 90 days. Sync cursors, rate counters, a lock and the last run summary live in the app key-value store.
 
+## Bank statement
+
+The `bank-sync` function runs every day at 05:00 UTC, one hour before the payment reminders.
+
+1. It fetches booked transactions (`BOOK`) of every account in the consent. The window starts 5 days before the previous run, because banks book late. The first run looks back 30 days.
+2. Each transaction becomes a `bankTransaction` record, deduplicated by account and `entry_reference`.
+3. A transaction is matched to an open invoice (`UNPAID` or `PARTIAL`) of the same currency and direction. Credits match sales, debits match purchases. The invoice number, KSeF number or KSeF payment id in the title is enough. Without a number, the amount must equal the remaining amount, and the counterparty must also match: the bank account for purchases, the name for sales. With several candidates the transaction stays unassigned, with a note saying why.
+4. The payment status, paid amount and payment date of the invoice come from the sum of its transactions.
+5. Unassigned transactions from the last 60 days are matched again, in case the invoice arrived after the payment.
+
+Assigning a transaction to an invoice by hand, or setting it to "Pominięta" (ignored), recalculates the payment status of the affected invoices. The "Nieprzypisane transakcje" view lists what is left to review.
+
+The bank consent lasts at most 180 days. Rocket.Chat gets a warning 14 days and 3 days before it expires, and a message when a run has no consent.
+
 ## Configuration
 
 Set these app variables in Twenty:
@@ -28,6 +43,11 @@ Set these app variables in Twenty:
 | `KSEF_TOKEN` | KSeF token with the `InvoiceRead` permission (secret) |
 | `KSEF_NIP` | Taxpayer NIP whose invoices are fetched |
 | `KSEF_ENV` | `test` (default), `demo` or `prod` |
+| `ENABLEBANKING_APP_ID` | Enable Banking application ID. Empty turns the bank statement off |
+| `ENABLEBANKING_PRIVATE_KEY` | Private RSA key (PEM) of the Enable Banking application (secret) |
+| `ENABLEBANKING_ASPSP` | Bank name exactly as Enable Banking lists it |
+| `ENABLEBANKING_COUNTRY` | Bank country, default `PL` |
+| `ENABLEBANKING_SESSION` | Written by the app after the bank authorization (secret). Do not edit |
 
 Company matching uses the `company.nip` field from the `regon-nip` app. When that field is missing, invoices keep the counterparty NIP and name as text only.
 
