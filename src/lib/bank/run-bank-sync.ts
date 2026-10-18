@@ -1,7 +1,13 @@
 import { MATCH_STATUS } from 'src/constants/options';
 import type { StoredBankSession } from 'src/lib/bank/consent';
 import { isConsentError, type EnableBankingClient } from 'src/lib/bank/enablebanking-http';
-import { matchTransaction, remainingMicros, AMOUNT_TOLERANCE_MICROS, type OpenInvoice } from 'src/lib/bank/match';
+import {
+  AMOUNT_TOLERANCE_MICROS,
+  matchTransaction,
+  remainingMicros,
+  type MatchableTransaction,
+  type OpenInvoice,
+} from 'src/lib/bank/match';
 import {
   bankErrorMessage,
   bankSummaryMessage,
@@ -24,6 +30,8 @@ export const INITIAL_LOOKBACK_DAYS = 30;
 // banki potrafią zaksięgować transakcję z datą sprzed kilku dni
 const OVERLAP_DAYS = 5;
 const REMATCH_DAYS = 60;
+// zapłacone faktury, do których jeszcze przypinamy transakcje (bez zmiany statusu)
+const PAID_LOOKBACK_DAYS = 120;
 export const CONSENT_WARNING_DAYS = [14, 3];
 
 export const BANK_KV_KEYS = {
@@ -41,6 +49,8 @@ export type BankSyncSummary = {
   fetched: number;
   created: number;
   matched: number;
+  // z tego przypięte do faktur, które już wcześniej były zapłacone (status bez zmian)
+  linkedToPaid: number;
   unmatched: number;
   rematched: number;
   invoicesUpdated: number;
@@ -71,6 +81,7 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
     fetched: 0,
     created: 0,
     matched: 0,
+    linkedToPaid: 0,
     unmatched: 0,
     rematched: 0,
     invoicesUpdated: 0,
@@ -107,17 +118,33 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
     await warnAboutConsentExpiry(deps, session, startedAt, notify);
 
     const openInvoices: OpenInvoice[] = await deps.store.findOpenInvoices();
+    const paidInvoices: OpenInvoice[] = await deps.store.findPaidInvoices(isoDate(startedAt - PAID_LOOKBACK_DAYS * DAY_MS));
     const touchedInvoices = new Set<string>();
     // dopasowanie zmniejsza pozostałą kwotę w pamięci, żeby kolejna transakcja w tym samym przebiegu jej nie dublowała
-    const applyMatch = (invoiceId: string, amountMicros: number) => {
-      touchedInvoices.add(invoiceId);
-      const invoice = openInvoices.find((i) => i.id === invoiceId);
+    const consume = (list: OpenInvoice[], invoiceId: string, amountMicros: number) => {
+      const invoice = list.find((i) => i.id === invoiceId);
       if (!invoice?.grossAmount) return;
       invoice.paidAmount = {
         amountMicros: (invoice.grossAmount.amountMicros - remainingMicros(invoice)) + amountMicros,
         currencyCode: invoice.grossAmount.currencyCode,
       };
-      if (remainingMicros(invoice) <= AMOUNT_TOLERANCE_MICROS) openInvoices.splice(openInvoices.indexOf(invoice), 1);
+      if (remainingMicros(invoice) <= AMOUNT_TOLERANCE_MICROS) list.splice(list.indexOf(invoice), 1);
+    };
+    // najpierw faktury otwarte (zmiana statusu), potem już zapłacone – tylko przypięcie jako ślad zapłaty
+    const findMatch = (t: MatchableTransaction) => {
+      const open = matchTransaction(t, openInvoices);
+      if (open.invoiceId) {
+        touchedInvoices.add(open.invoiceId);
+        consume(openInvoices, open.invoiceId, t.amount.amountMicros);
+        return open;
+      }
+      const paid = matchTransaction(t, paidInvoices);
+      if (paid.invoiceId) {
+        summary.linkedToPaid++;
+        consume(paidInvoices, paid.invoiceId, t.amount.amountMicros);
+        return { invoiceId: paid.invoiceId, note: `${paid.note}; faktura była już oznaczona jako zapłacona` };
+      }
+      return open;
     };
 
     const today = isoDate(startedAt);
@@ -137,9 +164,8 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
         .sort((a, b) => (a.bookingDate ?? '').localeCompare(b.bookingDate ?? ''));
 
       const records: (BankTransactionRecord & TransactionMatch)[] = fresh.map((t) => {
-        const match = matchTransaction(t, openInvoices);
+        const match = findMatch(t);
         if (match.invoiceId) {
-          applyMatch(match.invoiceId, t.amount.amountMicros);
           summary.matched++;
         } else {
           summary.unmatched++;
@@ -161,9 +187,8 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
     // faktura (np. zakupowa z KSeF) mogła dotrzeć później niż przelew – ponawiamy dopasowanie nieprzypisanych
     const pending = await deps.store.findUnmatchedTransactions(isoDate(startedAt - REMATCH_DAYS * DAY_MS));
     for (const t of pending) {
-      const match = matchTransaction(t, openInvoices);
+      const match = findMatch(t);
       if (!match.invoiceId) continue;
-      applyMatch(match.invoiceId, t.amount.amountMicros);
       await deps.store.updateTransaction(t.id, {
         invoiceId: match.invoiceId,
         matchStatus: MATCH_STATUS.AUTO,

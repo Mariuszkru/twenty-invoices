@@ -12,6 +12,7 @@ const tx = (overrides: Partial<MatchableTransaction>): MatchableTransaction => (
   remittanceInformation: null,
   counterpartyName: 'Inna Firma',
   counterpartyAccount: null,
+  bookingDate: '2026-10-16',
   ...overrides,
 });
 
@@ -83,6 +84,49 @@ describe('matchTransaction', () => {
     const result = matchTransaction(tx({ counterpartyName: 'Ktoś Inny' }), [openInvoice({ id: 'a' })]);
     expect(result.invoiceId).toBeNull();
     expect(result.note).toContain('kontrahent się nie zgadza');
+  });
+
+  it('rdzeń numeru z innym prefiksem dopasowuje tylko przy zgodnej kwocie', () => {
+    const invoices = [openInvoice({ id: 'a', name: 'FV 31/09/2026', counterpartyName: 'Euro-Bud' })];
+    expect(matchTransaction(tx({ remittanceInformation: 'FRA 31/09/2026', counterpartyName: 'X' }), invoices)).toEqual({
+      invoiceId: 'a',
+      note: expect.stringContaining('inny prefiks'),
+    });
+    expect(
+      matchTransaction(tx({ amount: PLN(100), remittanceInformation: 'FRA 31/09/2026', counterpartyName: 'X' }), invoices)
+        .invoiceId,
+    ).toBeNull();
+  });
+
+  it('sam rok albo pojedyncza liczba nie są rdzeniem numeru', () => {
+    const invoices = [openInvoice({ id: 'a', name: 'FV 2026', counterpartyName: 'Euro-Bud' })];
+    expect(matchTransaction(tx({ remittanceInformation: 'Zapłata 2026', counterpartyName: 'X' }), invoices).invoiceId).toBeNull();
+  });
+
+  it('wydatek kartą: dokładna kwota i data faktury ±3 dni, tylko przy jednym kandydacie', () => {
+    const card = tx({
+      direction: 'DEBIT',
+      amount: PLN(522.75),
+      remittanceInformation: '00000095191730150 MOBILE-PAYMENT-POS-TX-CODE',
+      counterpartyName: null,
+      bookingDate: '2026-10-16',
+    });
+    const dorian = openInvoice({ id: 'd', direction: 'PURCHASE', name: 'FS-133/10/26/OS', grossAmount: PLN(522.75), issueDate: '2026-10-16' });
+    const old = openInvoice({ id: 'o', direction: 'PURCHASE', name: 'X/1', grossAmount: PLN(522.75), issueDate: '2026-10-01' });
+    expect(matchTransaction(card, [dorian, old])).toEqual({ invoiceId: 'd', note: expect.stringContaining('data faktury ±3 dni') });
+
+    const twin = openInvoice({ id: 't', direction: 'PURCHASE', name: 'X/2', grossAmount: PLN(522.75), issueDate: '2026-10-14' });
+    expect(matchTransaction(card, [dorian, twin])).toEqual({ invoiceId: null, note: expect.stringContaining('Kilka faktur z tą kwotą i datą') });
+  });
+
+  it('reguła karty nie działa, gdy rachunek odbiorcy należy do innego znanego dostawcy', () => {
+    const other = openInvoice({ id: 'x', direction: 'PURCHASE', name: 'Z/1', grossAmount: PLN(10), bankAccount: 'PL27114020040000300201355387' });
+    const sameAmount = openInvoice({ id: 'y', direction: 'PURCHASE', name: 'Z/2', grossAmount: PLN(1230), issueDate: '2026-10-15' });
+    const result = matchTransaction(
+      tx({ direction: 'DEBIT', counterpartyAccount: 'PL27114020040000300201355387', counterpartyName: 'Dostawca X' }),
+      [other, sameAmount],
+    );
+    expect(result.invoiceId).toBeNull();
   });
 
   it('liczy pozostałą kwotę po wcześniejszej wpłacie częściowej', () => {

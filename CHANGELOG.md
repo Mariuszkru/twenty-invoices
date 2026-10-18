@@ -2,6 +2,12 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.6.1
+
+- Transactions are also linked to invoices that were already marked paid (issued in the last 120 days), as a payment trail. Their payment status, amount and date stay unchanged, and an invoice accepts transactions only up to its gross amount. The run summary reports them separately (`linkedToPaid`)
+- The invoice number in the title also matches without its letter prefix ("FRA 31/09/2026" for "FV 31/09/2026"), but only when the amount equals the remaining amount
+- Card and payment gateway expenses (PayU, Przelewy24, Paynow), where the bank gives no supplier: an exact amount and an invoice issue date within 3 days of the booking match a purchase invoice when exactly one fits. The rule is skipped when the recipient account belongs to a known supplier
+
 ## 0.6.0
 
 - Daily bank statement through Enable Banking (`bank-sync` cron, 05:00 UTC). Booked transactions are stored in the new `bankTransaction` object ("Transakcje bankowe"), deduplicated by account and `entry_reference`

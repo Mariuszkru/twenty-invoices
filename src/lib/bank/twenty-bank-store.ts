@@ -35,6 +35,7 @@ const OPEN_INVOICE_SELECTION = {
   paidAmount: { amountMicros: true, currencyCode: true },
   bankAccount: true,
   counterpartyName: true,
+  issueDate: true,
 } as const;
 
 // Pusta waluta w Twenty to amountMicros = null – dla logiki dopasowania to brak kwoty.
@@ -118,6 +119,37 @@ export const createTwentyBankStore = (): BankStore => {
         grossAmount: currencyOrNull(i.grossAmount),
         paidAmount: currencyOrNull(i.paidAmount),
       }));
+    },
+
+    findPaidInvoices: async (since) => {
+      const rows = await queryAll<OpenInvoice>(
+        'ksefInvoices',
+        { filter: { paymentStatus: { eq: PAYMENT_STATUS.PAID }, issueDate: { gte: since } } },
+        OPEN_INVOICE_SELECTION,
+      );
+      const linked = new Map<string, number>();
+      for (const part of chunks(rows.map((r) => r.id), PAGE)) {
+        const transactions = await queryAll<{
+          invoiceId: string;
+          amount: { amountMicros: number | null; currencyCode: string } | null;
+        }>(
+          'bankTransactions',
+          { filter: { invoiceId: { in: part }, matchStatus: { neq: MATCH_STATUS.IGNORED } } },
+          { invoiceId: true, amount: { amountMicros: true, currencyCode: true } },
+        );
+        for (const t of transactions) {
+          linked.set(t.invoiceId, (linked.get(t.invoiceId) ?? 0) + (currencyOrNull(t.amount)?.amountMicros ?? 0));
+        }
+      }
+      return rows.map((i) => {
+        const grossAmount = currencyOrNull(i.grossAmount);
+        const paid = linked.get(i.id);
+        return {
+          ...i,
+          grossAmount,
+          paidAmount: paid && grossAmount ? { amountMicros: paid, currencyCode: grossAmount.currencyCode } : null,
+        };
+      });
     },
 
     getInvoiceGross: async (invoiceId) => {

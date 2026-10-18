@@ -26,7 +26,14 @@ The `bank-sync` function runs every day at 05:00 UTC, one hour before the paymen
 
 1. It fetches booked transactions (`BOOK`) of every account in the consent. The window starts 5 days before the previous run, because banks book late. The first run looks back 30 days.
 2. Each transaction becomes a `bankTransaction` record, deduplicated by account and `entry_reference`.
-3. A transaction is matched to an open invoice (`UNPAID` or `PARTIAL`) of the same currency and direction. Credits match sales, debits match purchases. The invoice number, KSeF number or KSeF payment id in the title is enough. Without a number, the amount must equal the remaining amount, and the counterparty must also match: the bank account for purchases, the name for sales. With several candidates the transaction stays unassigned, with a note saying why.
+3. A transaction is matched to an open invoice (`UNPAID` or `PARTIAL`) of the same currency and direction. Credits match sales, debits match purchases. The rules, in order:
+   - The invoice number, KSeF number or KSeF payment id in the title is enough.
+   - The number without its letter prefix ("FRA 31/09/2026" for "FV 31/09/2026") matches when the amount equals the remaining amount.
+   - Without a number, the amount must equal the remaining amount, and the counterparty must also match: the bank account for purchases, the name for sales.
+   - Card and gateway expenses match a purchase invoice by exact amount and an issue date within 3 days of the booking.
+   - With several candidates the transaction stays unassigned, with a note saying why.
+
+   When no open invoice fits, the same rules run against invoices already marked paid in the last 120 days. A match only links the transaction as a payment trail and does not change the invoice.
 4. The payment status, paid amount and payment date of the invoice come from the sum of its transactions.
 5. Unassigned transactions from the last 60 days are matched again, in case the invoice arrived after the payment.
 

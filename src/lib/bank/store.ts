@@ -21,6 +21,8 @@ export type BankStore = {
   updateTransaction: (id: string, data: Partial<TransactionMatch>) => Promise<void>;
   // faktury obu kierunków ze statusem Niezapłacona/Częściowo
   findOpenInvoices: () => Promise<OpenInvoice[]>;
+  // faktury już zapłacone (wystawione od `since`); paidAmount = suma przypiętych transakcji (bez pominiętych)
+  findPaidInvoices: (since: string) => Promise<OpenInvoice[]>;
   getInvoiceGross: (invoiceId: string) => Promise<Currency | null>;
   listInvoiceTransactions: (
     invoiceId: string,

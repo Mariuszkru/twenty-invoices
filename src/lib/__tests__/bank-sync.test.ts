@@ -135,6 +135,41 @@ describe('runBankSync', () => {
     expect(memory.invoices[0].paymentStatus).toBe('PAID');
   });
 
+  it('przypina transakcję do faktury już zapłaconej bez zmiany jej statusu i tylko raz', async () => {
+    const paid = openInvoice({
+      id: 'paid',
+      name: 'FV 32/09/2026',
+      grossAmount: { amountMicros: 250_000_000, currencyCode: 'PLN' },
+      paidAmount: null,
+      paymentStatus: 'PAID',
+      paidAt: '2026-10-01',
+      issueDate: '2026-09-21',
+    });
+    const { deps, memory, sent } = setup(
+      {
+        transactions: {
+          'acc-1': [
+            apiTransaction({ entry_reference: 'r1', amount: '250.00', remittance_information: ['Fv 32/09/2026'] }),
+            apiTransaction({ entry_reference: 'r2', amount: '250.00', remittance_information: ['Fv 32/09/2026 ponownie'] }),
+          ],
+        },
+      },
+      [paid],
+    );
+
+    const result = await runBankSync(deps);
+
+    expect(result).toMatchObject({ matched: 1, linkedToPaid: 1, unmatched: 1, invoicesUpdated: 0 });
+    expect(memory.transactions[0]).toMatchObject({
+      invoiceId: 'paid',
+      matchStatus: 'AUTO',
+      matchNote: expect.stringContaining('faktura była już oznaczona jako zapłacona'),
+    });
+    expect(memory.transactions[1].invoiceId).toBeNull();
+    expect(memory.invoices[0]).toMatchObject({ paymentStatus: 'PAID', paidAt: '2026-10-01', paidAmount: null });
+    expect(sent[0]).toContain('w tym 1 do faktur już zapłaconych');
+  });
+
   it('bez sesji kończy się NO_CONSENT i prosi o połączenie z bankiem', async () => {
     const { deps, bank, sent } = setup({}, [], { session: null });
     const result = await runBankSync(deps);

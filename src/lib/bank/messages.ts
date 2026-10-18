@@ -17,7 +17,7 @@ export const bankErrorMessage = (message: string) =>
   `:warning: Pobieranie wyciągu bankowego nie powiodło się: ${message}`;
 
 export const bankSummaryMessage = (
-  summary: { created: number; matched: number; unmatched: number; rematched: number },
+  summary: { created: number; matched: number; linkedToPaid: number; unmatched: number; rematched: number },
   crmUrl: string | null,
 ) => {
   const url = transactionsUrl(crmUrl);
@@ -25,5 +25,6 @@ export const bankSummaryMessage = (
     ? `, nieprzypisane: *${summary.unmatched}*${url ? ` – [sprawdź](${url})` : ''}`
     : '';
   const rematched = summary.rematched ? `, wcześniejsze dopasowane teraz: ${summary.rematched}` : '';
-  return `:bank: Wyciąg bankowy: nowe transakcje ${summary.created}, dopasowane do faktur ${summary.matched}${unmatched}${rematched}.`;
+  const linkedToPaid = summary.linkedToPaid ? ` (w tym ${summary.linkedToPaid} do faktur już zapłaconych)` : '';
+  return `:bank: Wyciąg bankowy: nowe transakcje ${summary.created}, dopasowane do faktur ${summary.matched}${linkedToPaid}${unmatched}${rematched}.`;
 };

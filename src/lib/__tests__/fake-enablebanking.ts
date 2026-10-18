@@ -95,6 +95,18 @@ export const createMemoryBankStore = (invoices: MemoryInvoice[]) => {
     },
     findOpenInvoices: async () =>
       invoices.filter((i) => i.paymentStatus !== 'PAID').map((i) => structuredClone(i)),
+    findPaidInvoices: async (since) =>
+      invoices
+        .filter((i) => i.paymentStatus === 'PAID' && (i.issueDate ?? '') >= since)
+        .map((i) => {
+          const linked = transactions
+            .filter((t) => t.invoiceId === i.id && t.matchStatus !== MATCH_STATUS.IGNORED)
+            .reduce((sum, t) => sum + t.amount.amountMicros, 0);
+          return {
+            ...structuredClone(i),
+            paidAmount: linked && i.grossAmount ? { amountMicros: linked, currencyCode: i.grossAmount.currencyCode } : null,
+          };
+        }),
     getInvoiceGross: async (id) => invoices.find((i) => i.id === id)?.grossAmount ?? null,
     listInvoiceTransactions: async (id) =>
       transactions
@@ -117,6 +129,7 @@ export const openInvoice = (overrides: Partial<MemoryInvoice>): MemoryInvoice =>
   paidAmount: null,
   bankAccount: null,
   counterpartyName: 'Klient S.A.',
+  issueDate: '2026-10-10',
   paymentStatus: 'UNPAID',
   paidAt: null,
   ...overrides,
