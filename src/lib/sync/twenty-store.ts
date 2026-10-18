@@ -9,12 +9,12 @@ import type { InvoiceStore, PendingInvoice } from 'src/lib/sync/store';
 // Twenty ogranicza liczbę rekordów w jednej mutacji – zapisujemy paczkami.
 const CHUNK = 50;
 
-const chunks = <T>(items: T[], size = CHUNK): T[][] =>
+export const chunks = <T>(items: T[], size = CHUNK): T[][] =>
   Array.from({ length: Math.ceil(items.length / size) }, (_, i) =>
     items.slice(i * size, (i + 1) * size),
   );
 
-type Edges<T> = { edges: { node: T }[] };
+export type Edges<T> = { edges: { node: T }[] };
 
 // ilike bez symboli wieloznacznych = porównanie dokładne bez rozróżniania wielkości liter.
 const exactLike = (value: string) => value.replace(/[\\%_]/g, (c) => `\\${c}`);
@@ -40,7 +40,7 @@ const INVOICE_SUMMARY_SELECTION = {
 } as const;
 
 // Klient generowany ze schematu workspace'u jest dostępny dopiero po `twenty dev`; tu wystarcza luźne typowanie.
-type LooseClient = { query: (q: unknown) => Promise<any>; mutation: (q: unknown) => Promise<any> };
+export type LooseClient = { query: (q: unknown) => Promise<any>; mutation: (q: unknown) => Promise<any> };
 
 export const createTwentyStore = (): InvoiceStore => {
   // Synchronizacja działa także z crona (brak osoby) – zawsze uprawnienia aplikacji, żeby wynik nie zależał od wyzwalającego.
