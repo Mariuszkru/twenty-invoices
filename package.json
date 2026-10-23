@@ -17,7 +17,10 @@
     "typecheck": "tsgo --noEmit -p tsconfig.spec.json",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:unit": "vitest run --config vitest.unit.config.ts"
+    "test:unit": "vitest run --config vitest.unit.config.ts",
+    "server:start": "docker start twenty-app-dev 2>/dev/null || docker run -d --name twenty-app-dev -p 2020:2020 -e NODE_PORT=2020 -e SERVER_URL=http://localhost:2020 -v twenty-app-dev-data:/data/postgres -v twenty-app-dev-clickhouse:/data/clickhouse -v twenty-app-dev-storage:/app/packages/twenty-server/.local-storage twentycrm/twenty-app-dev:v2.51.0",
+    "server:stop": "docker stop twenty-app-dev",
+    "server:logs": "docker logs -f --tail 50 twenty-app-dev"
   },
   "devDependencies": {
     "@types/node": "^24.7.2",

@@ -19,21 +19,31 @@ Follow these steps to get your app running locally.
    The committed `yarn.lock` pins exact, integrity-checked versions, so this
    resolves nothing from the registry.
 
-2. Start the local Twenty server:
+2. Start the local Twenty server (Docker image `twentycrm/twenty-app-dev`, port 2020, data kept in Docker volumes):
 
    ```bash
-   yarn twenty docker:start
+   yarn server:start
    ```
 
-   Check the server status at any time with `yarn twenty docker:status`.
+   `yarn server:logs` streams the logs and `yarn server:stop` stops the server. The first start pulls the image and sets up the database, which takes a few minutes.
 
-3. Start the development server and sync your app:
+3. Open [http://localhost:2020](http://localhost:2020) and log in with the default development credentials: `tim@apple.dev` / `tim@apple.dev`.
+
+4. Connect the Twenty CLI to the local server once, as the remote `local`:
 
    ```bash
-   yarn twenty dev
+   twenty auth login --url http://localhost:2020 --name local
    ```
 
-4. Open [http://localhost:2020](http://localhost:2020) and log in with the default development credentials: `tim@apple.dev` / `tim@apple.dev`.
+5. Deploy the app to the local server, or watch the source and sync every build:
+
+   ```bash
+   twenty app apply --create -r local   # first time
+   twenty app apply -r local
+   twenty app dev -r local
+   ```
+
+   The default remote is production. Always pass `-r local` while developing.
 
 ## Bank statement (Enable Banking)
 
