@@ -185,5 +185,16 @@ export default defineObject({
       options: [...ALLOCATION_STATUS_OPTIONS],
       defaultValue: `'${ALLOCATION_STATUS.UNASSIGNED}'`,
     },
+    {
+      universalIdentifier: ID.lineProjectEntries,
+      name: 'projectEntries',
+      type: FieldType.RELATION,
+      label: 'Projekty',
+      description: 'Przypisania tej pozycji do projektów; ich suma wyznacza "Przypisanie do usługi".',
+      icon: 'IconBriefcase',
+      relationTargetObjectMetadataUniversalIdentifier: ID.entryObject,
+      relationTargetFieldMetadataUniversalIdentifier: ID.entryLine,
+      universalSettings: { relationType: RelationType.ONE_TO_MANY },
+    },
   ],
 });

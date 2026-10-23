@@ -8,6 +8,7 @@ A Twenty app that imports every sales and purchase invoice from the Polish Natio
 - `ksefInvoice` object: header data from KSeF metadata. It links to the matching Company by NIP and to the invoice it corrects, and stores the original FA(3) XML in a file field.
 - `ksefInvoiceLine` object: one record per `FaWiersz` with quantity, prices, VAT rate and codes. It also stores `marginEffectPln`, a signed net amount in PLN: sales count as positive and purchases as negative. A "before correction" line flips its sign. Foreign currencies use the rate printed on the invoice, or the NBP rate from the previous business day.
 - Fields ready for margin work: `costCategory` and `allocationStatus`, plus the "Koszty do przypisania" (costs to assign) view.
+- Projects with margin. See [Projects](#projects).
 - The app settings page shows a health banner with the result of the last sync.
 - Daily bank statement through Enable Banking (PSD2): incoming payments are matched to sales invoices and outgoing payments to purchase invoices. A confident match marks the invoice paid. See [Bank statement](#bank-statement).
 
@@ -40,6 +41,15 @@ The `bank-sync` function fetches the statement at the times set in `BANK_SYNC_TI
 The "Rozlicz przelew z fakturami" command on a transaction opens a panel to split it across one or more invoices by hand. Saving or editing allocations directly recalculates the payment status of the affected invoices. "Dopasowanie" says how a transaction was settled (automatically, by hand, or not yet), and "Cel płatności" says what it paid for: an invoice, salaries, ZUS or the tax office. The "Nieprzypisane transakcje" view lists what is left to review.
 
 The bank consent lasts at most 180 days. Rocket.Chat gets a warning 14 days and 3 days before it expires, and a message when a run has no consent.
+
+## Projects
+
+A `project` has a client (a company or a person, exactly one), a status and the computed revenue, cost, margin and margin %. Invoice lines are pinned to it through `projectEntry` records, as revenue or cost:
+
+- An empty type follows the invoice direction (sale → revenue, purchase → cost). An empty amount takes the part of the line not yet pinned anywhere, so a line can be split across several projects.
+- Amounts are net, in the invoice currency, and signed: the "before correction" row of a credit note is negative. They are converted to PLN with the rate the sync used for the line (invoice or NBP). An entry without a rate or in another currency is left out of the margin and gets a note.
+- Revenue and cost are the sums of PLN amounts by type, margin = revenue − cost, margin % = margin / revenue (empty at zero revenue). The `project-entry-changed` trigger recomputes them from scratch on every change, together with the line's "Przypisanie do usługi" status and the over-allocation check.
+- Twenty cannot reject a save synchronously, so `project-changed` reverts a client set to both a company and a person right after saving and explains it in "Uwagi". A project without a client gets the note "Brak klienta".
 
 ## Configuration
 

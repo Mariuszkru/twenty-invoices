@@ -39,10 +39,10 @@ const OPEN_INVOICE_SELECTION = {
   issueDate: true,
 } as const;
 
-type RawCurrency = { amountMicros: number | null; currencyCode: string } | null;
+export type RawCurrency = { amountMicros: number | null; currencyCode: string } | null;
 
 // Pusta waluta w Twenty to amountMicros = null – dla logiki dopasowania to brak kwoty.
-const currencyOrNull = (value: RawCurrency): Currency | null =>
+export const currencyOrNull = (value: RawCurrency): Currency | null =>
   value && value.amountMicros !== null ? { amountMicros: Number(value.amountMicros), currencyCode: value.currencyCode } : null;
 
 type Connection<T> = Edges<T> & { pageInfo: { endCursor: string | null; hasNextPage: boolean } };

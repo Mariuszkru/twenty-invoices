@@ -2,6 +2,14 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.13.0
+
+- New `project` object ("Projekty"): name, client (company or person), status (Planowany, W realizacji, Wstrzymany, Zakończony, Rozliczony, Anulowany), description and dates. Revenue, cost, margin and margin % in PLN are computed by the app and read-only
+- New `projectEntry` object ("Pozycje projektów"): an invoice line, or part of it, pinned to a project as revenue or cost. An empty type comes from the invoice direction (sale → revenue, purchase → cost), an empty amount takes the unallocated rest of the line. One line can be split across projects. Credit notes count negative: the "before correction" row is subtracted
+- Each change to a project entry recomputes the affected projects from scratch and sets "Przypisanie do usługi" on the invoice line. Allocations that exceed the line's net value, a missing exchange rate or an amount in another currency show up in "Uwaga" on the entry and in "Uwagi" on the project, and are never summed silently
+- A project with both a company and a person is reverted to its previous client a few seconds after saving, with a note in "Uwagi". A project without a client gets the note "Brak klienta"
+- "Projekty" in the navigation, with a table view and a kanban board by status that sums the margin per column. Invoices and invoice lines list the projects they are pinned to
+
 ## 0.12.1
 
 - twenty-sdk, twenty-client-sdk and twenty-ui are now 2.51.1. CI installs the Twenty CLI 2.51.1. A Twenty server 2.50.0 or newer is still enough

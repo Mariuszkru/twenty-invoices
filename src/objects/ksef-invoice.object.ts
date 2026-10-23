@@ -226,6 +226,17 @@ export default defineObject({
       universalSettings: { relationType: RelationType.ONE_TO_MANY },
     },
     {
+      universalIdentifier: ID.invProjectEntries,
+      name: 'projectEntries',
+      type: FieldType.RELATION,
+      label: 'Projekty',
+      description: 'Pozycje tej faktury przypięte do projektów.',
+      icon: 'IconBriefcase',
+      relationTargetObjectMetadataUniversalIdentifier: ID.entryObject,
+      relationTargetFieldMetadataUniversalIdentifier: ID.entryInvoice,
+      universalSettings: { relationType: RelationType.ONE_TO_MANY },
+    },
+    {
       universalIdentifier: ID.invXmlFile,
       name: 'xmlFile',
       type: FieldType.FILES,
