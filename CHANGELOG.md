@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.14.7
+
+- A new project gets a public Rocket.Chat channel named after it (lowercase, no Polish characters, e.g. `wdrozenie-crm`). If the name is taken, the channel gets a suffix from the project ID. Needs the new `ROCKETCHAT_USER_ID` and `ROCKETCHAT_AUTH_TOKEN` variables (Personal Access Token) next to the webhook; without them projects get no channel
+
 ## 0.14.6
 
 - Project entries created from the "Przypnij pozycje faktur" panel show the person who used the panel in "Created by", not the app name

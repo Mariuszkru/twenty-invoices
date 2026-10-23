@@ -130,6 +130,8 @@ export const ID = {
   varKsefEnv: '1f068e1b-1b35-4304-a321-8d0270c13b36',
   varKsefSession: '412e9e48-3b3f-4776-85bb-25254ea8c2d4',
   varRocketChatWebhook: '68afff76-5d76-423e-a05a-b3ec8a12d466',
+  varRocketChatUserId: '80c3e314-3890-4e67-9e19-7d4d8d7756d9',
+  varRocketChatAuthToken: '2297f8c8-c46a-4f58-9aed-8b1176ed2752',
   varCrmUrl: '9f6ef169-14c4-4cab-8ff1-79010ad9bdce',
   varReminderDays: '097317c9-2836-44d6-bd83-4fd5dc62005a',
   varEbAppId: '2bb087c9-bbd7-4b24-b0e7-83c73aa01ddf',
@@ -157,6 +159,7 @@ export const ID = {
   fnProjectChanged: '20b23fe3-9e02-4dcd-ac4f-faacf3251b4b',
   fnProjectPinContext: 'e3d93d51-284e-40f3-872b-03e3ff401512',
   fnProjectPin: 'd508f4ec-62a6-41d5-9dc0-17714467c263',
+  fnProjectCreated: 'a032fa12-21da-4ff4-845c-f1a4f0b70219',
 
   fcSyncCommand: 'a00503de-99a0-408b-993d-bd1725886bff',
   cmdSync: 'bd29b4c2-6dfa-4c5b-b7d2-ecd9d46f783a',
