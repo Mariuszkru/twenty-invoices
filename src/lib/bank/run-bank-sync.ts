@@ -1,6 +1,7 @@
 import { ALLOCATION_ORIGIN, MATCH_STATUS } from 'src/constants/options';
 import type { StoredBankSession } from 'src/lib/bank/consent';
 import { isConsentError, type EnableBankingClient } from 'src/lib/bank/enablebanking-http';
+import { classifyExpense, expenseLabel } from 'src/lib/bank/expense-category';
 import {
   AMOUNT_TOLERANCE_MICROS,
   matchTransaction,
@@ -56,6 +57,8 @@ export type BankSyncSummary = {
   // z tego przypięte do faktur, które już wcześniej były zapłacone (status bez zmian)
   linkedToPaid: number;
   unmatched: number;
+  // wydatki bez faktury (ZUS, podatki, wynagrodzenia), także wcześniejsze nieprzypisane
+  categorized: number;
   rematched: number;
   invoicesUpdated: number;
   message?: string;
@@ -87,6 +90,7 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
     matched: 0,
     linkedToPaid: 0,
     unmatched: 0,
+    categorized: 0,
     rematched: 0,
     invoicesUpdated: 0,
   };
@@ -160,6 +164,17 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
         amount: { amountMicros: a.amountMicros, currencyCode: t.amount.currencyCode },
         origin: ALLOCATION_ORIGIN.AUTO,
       }));
+    // przelew bez faktury: ZUS, podatek albo wynagrodzenie dostaje rodzaj wydatku zamiast statusu nieprzypisanej
+    const expenseStatus = (t: MatchableTransaction): TransactionStatus | null => {
+      const expense = classifyExpense(t);
+      return expense
+        ? {
+            matchStatus: MATCH_STATUS.NO_INVOICE,
+            matchNote: `Bez faktury: ${expenseLabel(expense.category)} (${expense.note})`,
+            expenseCategory: expense.category,
+          }
+        : null;
+    };
 
     const today = isoDate(startedAt);
     const freshUnmatched = new Set<string>();
@@ -181,15 +196,16 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
       const records: (BankTransactionRecord & TransactionStatus)[] = matches.map(({ t, match }) => {
         if (match.allocations.length) {
           summary.matched++;
-        } else {
-          summary.unmatched++;
-          freshUnmatched.add(t.externalId);
+          return { ...t, matchStatus: MATCH_STATUS.AUTO, matchNote: match.note };
         }
-        return {
-          ...t,
-          matchStatus: match.allocations.length ? MATCH_STATUS.AUTO : MATCH_STATUS.UNMATCHED,
-          matchNote: match.note,
-        };
+        const expense = expenseStatus(t);
+        if (expense) {
+          summary.categorized++;
+          return { ...t, ...expense };
+        }
+        summary.unmatched++;
+        freshUnmatched.add(t.externalId);
+        return { ...t, matchStatus: MATCH_STATUS.UNMATCHED, matchNote: match.note };
       });
       if (records.length) {
         const ids = await deps.store.createTransactions(records);
@@ -208,7 +224,15 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
     const pending = await deps.store.findUnmatchedTransactions(isoDate(startedAt - REMATCH_DAYS * DAY_MS));
     for (const t of pending) {
       const match = findMatch(t);
-      if (!match.allocations.length) continue;
+      if (!match.allocations.length) {
+        // nowe z tego przebiegu już sprawdziliśmy; wcześniejsze nieprzypisane (np. sprzed tej funkcji) klasyfikujemy teraz
+        const expense = freshUnmatched.has(t.externalId) ? null : expenseStatus(t);
+        if (expense) {
+          await deps.store.updateTransaction(t.id, expense);
+          summary.categorized++;
+        }
+        continue;
+      }
       await deps.store.createAllocations(allocationRecords(t.id, t, match));
       await deps.store.updateTransaction(t.id, { matchStatus: MATCH_STATUS.AUTO, matchNote: match.note });
       // nowa transakcja z tego przebiegu nie jest "wcześniejsza" – tylko przestaje być nieprzypisana
@@ -225,7 +249,7 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
     }
     summary.invoicesUpdated = touchedInvoices.size;
 
-    if (summary.created > 0 || summary.rematched > 0) {
+    if (summary.created > 0 || summary.rematched > 0 || summary.categorized > 0) {
       await notify(bankSummaryMessage(summary, deps.notify?.crmUrl ?? null));
     }
     return await finish(summary);

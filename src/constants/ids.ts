@@ -72,6 +72,7 @@ export const ID = {
   btxMatchStatus: '4ecf7cd1-36d7-4e12-8cc4-5d377b78d0f5',
   btxMatchNote: 'a9f9da1c-9d01-4029-acea-3cd600cc95bc',
   btxAllocations: '80f6339e-7fce-4b7e-a7a4-5bb346bdcb8f',
+  btxExpenseCategory: '832db0cf-8371-441c-99ac-bf50e4f6faac',
 
   allocTransaction: 'fbf73e79-6348-4a9d-af8c-1f84df620e37',
   allocInvoice: '7002237e-617d-4ebe-b194-6261ff85483f',

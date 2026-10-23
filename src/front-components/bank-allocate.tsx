@@ -6,6 +6,7 @@ import { Button } from 'twenty-ui/primitives/input';
 import { useTheme } from 'twenty-ui/theme';
 
 import { ID } from 'src/constants/ids';
+import { EXPENSE_CATEGORY_OPTIONS } from 'src/constants/options';
 import { toMicros } from 'src/lib/decimal';
 
 type Candidate = {
@@ -32,6 +33,7 @@ type Context = {
     amount: { amountMicros: number; currencyCode: string };
     counterpartyName: string | null;
     remittanceInformation: string | null;
+    expenseCategory: string | null;
   };
   candidates?: Candidate[];
 };
@@ -43,7 +45,8 @@ const toInput = (micros: number) => (micros / 1_000_000).toFixed(2).replace('.',
 
 const formatDate = (iso: string | null) => (iso ? iso.slice(0, 10).split('-').reverse().join('.') : '—');
 
-// Panel boczny rozliczenia transakcji: wybór jednej albo kilku faktur (przelew zbiorczy) z kwotami.
+// Panel boczny rozliczenia transakcji: wybór jednej albo kilku faktur (przelew zbiorczy) z kwotami
+// albo, dla wydatku, rodzaju wydatku bez faktury (ZUS, podatki, wynagrodzenia).
 const BankAllocate = () => {
   const theme = useTheme();
   const selectedIds = useSelectedRecordIds();
@@ -52,6 +55,8 @@ const BankAllocate = () => {
   const [context, setContext] = useState<Context | null>(null);
   // kwota wpisana dla zaznaczonych faktur (tekst, z przecinkiem)
   const [selected, setSelected] = useState<Record<string, string>>({});
+  // rodzaj wydatku bez faktury – wyklucza wybór faktur
+  const [category, setCategory] = useState<string | null>(null);
   const [filter, setFilter] = useState('');
   const [showSettled, setShowSettled] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -67,6 +72,7 @@ const BankAllocate = () => {
           return;
         }
         setContext(result);
+        setCategory(result.transaction?.expenseCategory ?? null);
         setSelected(
           Object.fromEntries(
             (result.candidates ?? []).filter((c) => c.allocatedMicros !== 0).map((c) => [c.id, toInput(c.allocatedMicros)]),
@@ -97,7 +103,8 @@ const BankAllocate = () => {
     });
   }, [context, filter, selected, showSettled]);
 
-  const toggle = (candidate: Candidate) =>
+  const toggle = (candidate: Candidate) => {
+    setCategory(null);
     setSelected((current) => {
       const next = { ...current };
       if (next[candidate.id] !== undefined) {
@@ -110,6 +117,12 @@ const BankAllocate = () => {
       }
       return next;
     });
+  };
+
+  const pickCategory = (value: string) => {
+    setSelected({});
+    setCategory((current) => (current === value ? null : value));
+  };
 
   const save = async () => {
     if (!transactionId) return;
@@ -122,14 +135,18 @@ const BankAllocate = () => {
       }));
       const result = await new RestApiClient().post<{ ok: boolean; message?: string; allocations?: number }>(
         '/s/bank/allocate',
-        { transactionId, allocations },
+        { transactionId, allocations: category ? [] : allocations, expenseCategory: category },
       );
       if (!result.ok) {
         setError(result.message ?? 'Nie udało się zapisać rozliczenia.');
         return;
       }
       await enqueueSnackbar({
-        message: result.allocations ? `Zapisano rozliczenie: ${result.allocations} fakt.` : 'Usunięto rozliczenie transakcji.',
+        message: category
+          ? `Zapisano wydatek bez faktury: ${EXPENSE_CATEGORY_OPTIONS.find((o) => o.value === category)?.label ?? category}.`
+          : result.allocations
+            ? `Zapisano rozliczenie: ${result.allocations} fakt.`
+            : 'Usunięto rozliczenie transakcji.',
         variant: 'success',
       });
       await closeSidePanel();
@@ -201,7 +218,32 @@ const BankAllocate = () => {
         </div>
       )}
 
-      {transaction && (
+      {transaction?.direction === 'DEBIT' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing[2] }}>
+          <div style={muted}>Wydatek bez faktury</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: theme.spacing[2] }}>
+            {EXPENSE_CATEGORY_OPTIONS.map((o) => (
+              <label
+                key={o.value}
+                style={{
+                  ...box,
+                  padding: `${theme.spacing[1]} ${theme.spacing[2]}`,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: theme.spacing[2],
+                  cursor: 'pointer',
+                  borderColor: category === o.value ? theme.color.blue : theme.border.color.medium,
+                }}
+              >
+                <input type="checkbox" checked={category === o.value} disabled={busy} onChange={() => pickCategory(o.value)} />
+                {o.label}
+              </label>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {transaction && !category && (
         <input
           value={filter}
           placeholder="Szukaj faktury po numerze albo kontrahencie"
@@ -210,14 +252,14 @@ const BankAllocate = () => {
         />
       )}
 
-      {transaction && settledCount > 0 && (
+      {transaction && !category && settledCount > 0 && (
         <label style={{ ...muted, display: 'flex', alignItems: 'center', gap: theme.spacing[2], cursor: 'pointer' }}>
           <input type="checkbox" checked={showSettled} onChange={(e) => setShowSettled(e.target.checked)} />
           Pokaż faktury już zapłacone ({settledCount})
         </label>
       )}
 
-      {transaction && (
+      {transaction && !category && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing[2] }}>
           {visible.length === 0 && (
             <div style={muted}>
@@ -285,7 +327,15 @@ const BankAllocate = () => {
           <Button variant="solid" color="accent" loading={busy} disabled={busy || leftMicros < -10_000} onClick={save}>
             Zapisz rozliczenie
           </Button>
-          <Button variant="ghost" color="neutral" disabled={busy || Object.keys(selected).length === 0} onClick={() => setSelected({})}>
+          <Button
+            variant="ghost"
+            color="neutral"
+            disabled={busy || (Object.keys(selected).length === 0 && !category)}
+            onClick={() => {
+              setSelected({});
+              setCategory(null);
+            }}
+          >
             Wyczyść
           </Button>
         </div>

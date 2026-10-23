@@ -23,7 +23,10 @@ const handler = async (event: DatabaseEventPayload<ObjectRecordEvent<AllocationR
     const transaction = await store.getTransaction(transactionId);
     if (!transaction || transaction.matchStatus === MATCH_STATUS.IGNORED) continue;
     const allocations = await store.listTransactionAllocations(transactionId);
+    // wydatek bez faktury zostaje nim, dopóki ktoś nie przypnie faktury; wtedy traci rodzaj wydatku
+    if (!allocations.length && transaction.matchStatus === MATCH_STATUS.NO_INVOICE) continue;
     await store.updateTransaction(transactionId, {
+      expenseCategory: null,
       matchStatus: allocations.length ? MATCH_STATUS.MANUAL : MATCH_STATUS.UNMATCHED,
       matchNote: 'Rozliczenie zmienione ręcznie',
     });

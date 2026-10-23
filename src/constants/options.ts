@@ -117,6 +117,7 @@ export const MATCH_STATUS = {
   MANUAL: 'MANUAL',
   UNMATCHED: 'UNMATCHED',
   IGNORED: 'IGNORED',
+  NO_INVOICE: 'NO_INVOICE',
 } as const;
 export type MatchStatus = (typeof MATCH_STATUS)[keyof typeof MATCH_STATUS];
 
@@ -125,6 +126,17 @@ export const MATCH_STATUS_OPTIONS = [
   { value: MATCH_STATUS.MANUAL, label: 'Przypisana ręcznie', position: 1, color: 'blue' },
   { value: MATCH_STATUS.UNMATCHED, label: 'Nieprzypisana', position: 2, color: 'yellow' },
   { value: MATCH_STATUS.IGNORED, label: 'Pominięta', position: 3, color: 'gray' },
+  { value: MATCH_STATUS.NO_INVOICE, label: 'Bez faktury', position: 4, color: 'purple' },
+] as const;
+
+// Wydatki bez faktury (status "Bez faktury"): na co poszedł przelew.
+export const EXPENSE_CATEGORY = { SALARY: 'SALARY', ZUS: 'ZUS', TAX: 'TAX' } as const;
+export type ExpenseCategory = (typeof EXPENSE_CATEGORY)[keyof typeof EXPENSE_CATEGORY];
+
+export const EXPENSE_CATEGORY_OPTIONS = [
+  { value: EXPENSE_CATEGORY.SALARY, label: 'Wynagrodzenia', position: 0, color: 'blue' },
+  { value: EXPENSE_CATEGORY.ZUS, label: 'ZUS', position: 1, color: 'orange' },
+  { value: EXPENSE_CATEGORY.TAX, label: 'Podatki', position: 2, color: 'red' },
 ] as const;
 
 // Skąd pochodzi rozliczenie transakcji z fakturą.

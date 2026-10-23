@@ -5,9 +5,10 @@ import { AllocationError, saveManualAllocation, type ManualAllocation } from 'sr
 import { createTwentyBankStore } from 'src/lib/bank/twenty-bank-store';
 import { errorMessage } from 'src/lib/sync/import-details';
 
-type AllocateBody = { transactionId?: string; allocations?: ManualAllocation[] };
+type AllocateBody = { transactionId?: string; allocations?: ManualAllocation[]; expenseCategory?: string | null };
 
-// Zapis z panelu "Rozlicz przelew": zastępuje rozliczenia transakcji i przelicza płatność faktur.
+// Zapis z panelu "Rozlicz przelew": zastępuje rozliczenia transakcji i przelicza płatność faktur
+// albo oznacza wydatek bez faktury (ZUS, podatki, wynagrodzenia).
 export default defineLogicFunction({
   universalIdentifier: ID.fnBankAllocate,
   name: 'bank-allocate',
@@ -19,10 +20,10 @@ export default defineLogicFunction({
     isAuthRequired: true,
   },
   handler: async (event: { body: object | null }) => {
-    const { transactionId, allocations } = (event.body ?? {}) as AllocateBody;
+    const { transactionId, allocations, expenseCategory } = (event.body ?? {}) as AllocateBody;
     if (!transactionId || !Array.isArray(allocations)) return { ok: false, message: 'Niepełne dane rozliczenia.' };
     try {
-      return { ok: true, ...(await saveManualAllocation(createTwentyBankStore(), transactionId, allocations)) };
+      return { ok: true, ...(await saveManualAllocation(createTwentyBankStore(), transactionId, allocations, expenseCategory ?? null)) };
     } catch (e) {
       if (!(e instanceof AllocationError)) console.error(`[bank-allocate] ${errorMessage(e)}`);
       return { ok: false, message: errorMessage(e) };

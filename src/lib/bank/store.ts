@@ -8,6 +8,8 @@ import type { Currency } from 'src/lib/sync/mapping';
 export type TransactionStatus = {
   matchStatus: string;
   matchNote: string | null;
+  // tylko dla statusu "Bez faktury"
+  expenseCategory?: string | null;
 };
 
 export type StoredTransaction = BankTransactionRecord & TransactionStatus & { id: string };

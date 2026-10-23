@@ -22,6 +22,7 @@ const TRANSACTION_SELECTION = {
   accountIban: true,
   matchStatus: true,
   matchNote: true,
+  expenseCategory: true,
 } as const;
 
 const OPEN_INVOICE_SELECTION = {
