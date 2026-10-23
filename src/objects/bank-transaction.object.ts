@@ -3,9 +3,9 @@ import { defineObject, FieldType, OnDeleteAction, RelationType } from 'twenty-sd
 import { ID } from 'src/constants/ids';
 import {
   BANK_DIRECTION_OPTIONS,
-  EXPENSE_CATEGORY_OPTIONS,
   MATCH_STATUS,
   MATCH_STATUS_OPTIONS,
+  PAYMENT_PURPOSE_OPTIONS,
 } from 'src/constants/options';
 
 // Zaksięgowana transakcja z wyciągu bankowego pobrana przez Enable Banking. Pole `name` (dodawane automatycznie)
@@ -93,27 +93,28 @@ export default defineObject({
       type: FieldType.SELECT,
       label: 'Dopasowanie',
       description:
-        'Rozliczenie w panelu "Rozlicz przelew" ustawia "Przypisana ręcznie"; "Pominięta" wyłącza transakcję z płatności; ' +
-        '"Bez faktury" to wydatek z rodzajem (wynagrodzenia, ZUS, podatki).',
+        'Jak transakcja została rozliczona: automatycznie przy pobraniu wyciągu albo ręcznie w panelu "Rozlicz przelew".',
       icon: 'IconLink',
       options: [...MATCH_STATUS_OPTIONS],
       defaultValue: `'${MATCH_STATUS.UNMATCHED}'`,
     },
     {
-      universalIdentifier: ID.btxExpenseCategory,
-      name: 'expenseCategory',
+      universalIdentifier: ID.btxPaymentPurpose,
+      name: 'paymentPurpose',
       type: FieldType.SELECT,
-      label: 'Rodzaj wydatku',
-      description: 'Wydatek bez faktury: wynagrodzenia, ZUS albo podatki. Ustawiany automatycznie albo w panelu "Rozlicz przelew".',
-      icon: 'IconCategory',
-      options: [...EXPENSE_CATEGORY_OPTIONS],
+      label: 'Cel płatności',
+      description:
+        'Na co poszła transakcja: faktura albo wydatek bez faktury (wynagrodzenia, ZUS, urząd skarbowy). ' +
+        'Pusty, gdy transakcja jest nieprzypisana.',
+      icon: 'IconTarget',
+      options: [...PAYMENT_PURPOSE_OPTIONS],
     },
     {
       universalIdentifier: ID.btxEmployee,
       name: 'employee',
       type: FieldType.RELATION,
       label: 'Pracownik',
-      description: 'Pracownik, którego dotyczy wynagrodzenie (rodzaj wydatku "Wynagrodzenia").',
+      description: 'Pracownik, którego dotyczy wynagrodzenie (cel płatności "Wynagrodzenia").',
       icon: 'IconUserDollar',
       relationTargetObjectMetadataUniversalIdentifier: ID.employeeObject,
       relationTargetFieldMetadataUniversalIdentifier: ID.empSalaryTransactions,

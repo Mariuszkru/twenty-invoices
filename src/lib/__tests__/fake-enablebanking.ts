@@ -79,10 +79,9 @@ export type MemoryInvoice = OpenInvoice & { paymentStatus: string; paidAt: strin
 export const createMemoryBankStore = (invoices: MemoryInvoice[], employees: Employee[] = []) => {
   const transactions: StoredTransaction[] = [];
   const allocations: StoredAllocation[] = [];
-  const statusOf = (transactionId: string) => transactions.find((t) => t.id === transactionId)?.matchStatus ?? null;
   const allocatedTo = (invoiceId: string) =>
     allocations
-      .filter((a) => a.invoiceId === invoiceId && statusOf(a.transactionId) !== MATCH_STATUS.IGNORED)
+      .filter((a) => a.invoiceId === invoiceId)
       .reduce((sum, a) => sum + a.amount.amountMicros, 0);
 
   // jak w Twenty: paidAmount do dopasowania to suma rozliczeń, nie pole faktury
@@ -131,7 +130,7 @@ export const createMemoryBankStore = (invoices: MemoryInvoice[], employees: Empl
         .filter((a) => a.invoiceId === id)
         .map((a) => {
           const t = transactions.find((x) => x.id === a.transactionId);
-          return { amount: a.amount, bookingDate: t?.bookingDate ?? null, matchStatus: t?.matchStatus ?? null };
+          return { amount: a.amount, bookingDate: t?.bookingDate ?? null };
         }),
     updateInvoicePayment: async (id, payment: InvoicePayment) => {
       Object.assign(invoices.find((i) => i.id === id)!, payment);

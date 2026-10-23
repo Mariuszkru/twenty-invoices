@@ -37,7 +37,7 @@ The `bank-sync` function fetches the statement at the times set in `BANK_SYNC_TI
 4. The payment status, paid amount and payment date of the invoice come from the sum of its allocations.
 5. Unassigned transactions from the last 60 days are matched again, in case the invoice arrived after the payment.
 
-The "Rozlicz przelew z fakturami" command on a transaction opens a panel to split it across one or more invoices by hand. Saving, editing allocations directly, or setting a transaction to "Pominięta" (ignored) recalculates the payment status of the affected invoices. The "Nieprzypisane transakcje" view lists what is left to review.
+The "Rozlicz przelew z fakturami" command on a transaction opens a panel to split it across one or more invoices by hand. Saving or editing allocations directly recalculates the payment status of the affected invoices. "Dopasowanie" says how a transaction was settled (automatically, by hand, or not yet), and "Cel płatności" says what it paid for: an invoice, salaries, ZUS or the tax office. The "Nieprzypisane transakcje" view lists what is left to review.
 
 The bank consent lasts at most 180 days. Rocket.Chat gets a warning 14 days and 3 days before it expires, and a message when a run has no consent.
 

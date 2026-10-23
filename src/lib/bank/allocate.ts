@@ -1,4 +1,12 @@
-import { ALLOCATION_ORIGIN, BANK_DIRECTION, DIRECTION, EXPENSE_CATEGORY, MATCH_STATUS } from 'src/constants/options';
+import {
+  ALLOCATION_ORIGIN,
+  BANK_DIRECTION,
+  DIRECTION,
+  EXPENSE_CATEGORY,
+  isExpenseCategory,
+  MATCH_STATUS,
+  PAYMENT_PURPOSE,
+} from 'src/constants/options';
 import { classifyExpense, expenseLabel, findEmployeeId } from 'src/lib/bank/expense-category';
 import {
   AMOUNT_TOLERANCE_MICROS,
@@ -51,9 +59,11 @@ export type AllocationContext = {
     | 'counterpartyName'
     | 'remittanceInformation'
     | 'matchStatus'
-    | 'expenseCategory'
     | 'employeeId'
-  >;
+  > & {
+    // cel płatności, gdy to wydatek bez faktury (panel ma osobną zakładkę dla faktur)
+    expenseCategory: string | null;
+  };
   candidates: AllocationCandidate[];
   // lista do wyboru przy wynagrodzeniu i pracownik podpowiedziany po odbiorcy przelewu
   employees: Employee[];
@@ -135,8 +145,8 @@ export const allocationContext = async (store: BankStore, transactionId: string)
     );
 
   const { id, name, bookingDate, direction, amount, counterpartyName, remittanceInformation, matchStatus } = transaction;
-  const noInvoice = matchStatus === MATCH_STATUS.NO_INVOICE;
-  const expenseCategory = noInvoice ? (transaction.expenseCategory ?? null) : null;
+  const noInvoice = isExpenseCategory(transaction.paymentPurpose);
+  const expenseCategory = noInvoice ? (transaction.paymentPurpose ?? null) : null;
   const employeeId = noInvoice ? (transaction.employeeId ?? null) : null;
   const employees = direction === BANK_DIRECTION.DEBIT ? await store.listEmployees() : [];
   const proposal = current.length || noInvoice ? null : propose(transaction, open, paid, employees);
@@ -253,7 +263,7 @@ export const saveManualAllocation = async (
 
   const left = transaction.amount.amountMicros - total;
   await store.updateTransaction(transactionId, {
-    expenseCategory: null,
+    paymentPurpose: wanted.length ? PAYMENT_PURPOSE.INVOICE : null,
     employeeId: null,
     matchStatus: wanted.length ? MATCH_STATUS.MANUAL : MATCH_STATUS.UNMATCHED,
     matchNote: wanted.length
@@ -273,7 +283,7 @@ const saveExpense = async (
   items: ManualAllocation[],
   { category, employeeId }: ManualExpense,
 ) => {
-  if (!Object.values(EXPENSE_CATEGORY).some((c) => c === category)) throw new AllocationError('Nieznany rodzaj wydatku.');
+  if (!isExpenseCategory(category)) throw new AllocationError('Nieznany rodzaj wydatku.');
   const salary = category === EXPENSE_CATEGORY.SALARY;
   if (salary && !employeeId) throw new AllocationError('Wybierz pracownika, którego dotyczy wynagrodzenie.');
   const employee = salary ? (await store.listEmployees()).find((e) => e.id === employeeId) : null;
@@ -285,9 +295,9 @@ const saveExpense = async (
   const previous = await store.listTransactionAllocations(transaction.id);
   await store.deleteAllocations(previous.map((a) => a.id));
   await store.updateTransaction(transaction.id, {
-    matchStatus: MATCH_STATUS.NO_INVOICE,
+    matchStatus: MATCH_STATUS.MANUAL,
     matchNote: `Bez faktury: ${expenseLabel(category)}${employee?.name ? ` – ${employee.name}` : ''} (ręcznie)`,
-    expenseCategory: category,
+    paymentPurpose: category,
     employeeId: employee?.id ?? null,
   });
   const affected = new Set(previous.map((a) => a.invoiceId));

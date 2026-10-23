@@ -30,7 +30,7 @@ export default defineView({
     { universalIdentifier: 'a3afcd84-d82f-4981-8e1c-8f05cff6a6b7', fieldMetadataUniversalIdentifier: ID.btxCounterpartyName, position: 6, isVisible: true, size: 200 },
     { universalIdentifier: '34975616-500c-4580-9bc5-8aa5f9c3bc4d', fieldMetadataUniversalIdentifier: ID.btxRemittance, position: 7, isVisible: true, size: 260 },
     { universalIdentifier: '4fe34237-315d-48f2-b313-4b8abba7aea5', fieldMetadataUniversalIdentifier: ID.btxMatchNote, position: 8, isVisible: true, size: 260 },
-    { universalIdentifier: '07305663-f897-468a-add1-1d62cd578a25', fieldMetadataUniversalIdentifier: ID.btxExpenseCategory, position: 9, isVisible: true, size: 160 },
+    { universalIdentifier: '07305663-f897-468a-add1-1d62cd578a25', fieldMetadataUniversalIdentifier: ID.btxPaymentPurpose, position: 9, isVisible: true, size: 160 },
     { universalIdentifier: '8a39f79e-059f-4b59-ae7d-c7c27eea9a12', fieldMetadataUniversalIdentifier: ID.btxEmployee, position: 10, isVisible: true, size: 180 },
   ],
   sorts: [

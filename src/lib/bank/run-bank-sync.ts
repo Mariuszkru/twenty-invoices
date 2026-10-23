@@ -1,4 +1,4 @@
-import { ALLOCATION_ORIGIN, EXPENSE_CATEGORY, MATCH_STATUS } from 'src/constants/options';
+import { ALLOCATION_ORIGIN, EXPENSE_CATEGORY, MATCH_STATUS, PAYMENT_PURPOSE } from 'src/constants/options';
 import type { StoredBankSession } from 'src/lib/bank/consent';
 import { isConsentError, type EnableBankingClient } from 'src/lib/bank/enablebanking-http';
 import { classifyExpense, expenseLabel, findEmployeeId } from 'src/lib/bank/expense-category';
@@ -164,7 +164,7 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
         amount: { amountMicros: a.amountMicros, currencyCode: t.amount.currencyCode },
         origin: ALLOCATION_ORIGIN.AUTO,
       }));
-    // przelew bez faktury: ZUS, podatek albo wynagrodzenie dostaje rodzaj wydatku zamiast statusu nieprzypisanej;
+    // przelew bez faktury: ZUS, podatek albo wynagrodzenie dostaje cel płatności zamiast statusu nieprzypisanej;
     // wynagrodzenie dostaje pracownika, gdy odbiorca jednoznacznie pasuje do listy Pracownicy
     let employees: Employee[] | null = null;
     const expenseStatus = async (t: MatchableTransaction): Promise<TransactionStatus | null> => {
@@ -175,9 +175,9 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
           ? findEmployeeId((employees ??= await deps.store.listEmployees()), t.counterpartyName)
           : null;
       return {
-        matchStatus: MATCH_STATUS.NO_INVOICE,
+        matchStatus: MATCH_STATUS.AUTO,
         matchNote: `Bez faktury: ${expenseLabel(expense.category)} (${expense.note})`,
-        expenseCategory: expense.category,
+        paymentPurpose: expense.category,
         employeeId,
       };
     };
@@ -203,7 +203,7 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
       for (const { t, match } of matches) {
         if (match.allocations.length) {
           summary.matched++;
-          records.push({ ...t, matchStatus: MATCH_STATUS.AUTO, matchNote: match.note });
+          records.push({ ...t, matchStatus: MATCH_STATUS.AUTO, matchNote: match.note, paymentPurpose: PAYMENT_PURPOSE.INVOICE });
           continue;
         }
         const expense = await expenseStatus(t);
@@ -243,7 +243,11 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
         continue;
       }
       await deps.store.createAllocations(allocationRecords(t.id, t, match));
-      await deps.store.updateTransaction(t.id, { matchStatus: MATCH_STATUS.AUTO, matchNote: match.note });
+      await deps.store.updateTransaction(t.id, {
+        matchStatus: MATCH_STATUS.AUTO,
+        matchNote: match.note,
+        paymentPurpose: PAYMENT_PURPOSE.INVOICE,
+      });
       // nowa transakcja z tego przebiegu nie jest "wcześniejsza" – tylko przestaje być nieprzypisana
       if (freshUnmatched.delete(t.externalId)) {
         summary.unmatched--;

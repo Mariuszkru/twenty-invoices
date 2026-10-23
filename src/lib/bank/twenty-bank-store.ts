@@ -22,7 +22,7 @@ const TRANSACTION_SELECTION = {
   accountIban: true,
   matchStatus: true,
   matchNote: true,
-  expenseCategory: true,
+  paymentPurpose: true,
   employeeId: true,
 } as const;
 
@@ -74,17 +74,16 @@ export const createTwentyBankStore = (): BankStore => {
     return amount ? { ...t, amount } : null;
   };
 
-  // suma rozliczeń per faktura, bez transakcji oznaczonych jako pominięte
+  // suma rozliczeń per faktura
   const allocatedByInvoice = async (invoiceIds: string[]) => {
     const totals = new Map<string, number>();
     for (const part of chunks(invoiceIds, PAGE)) {
-      const rows = await queryAll<{ invoiceId: string; amount: RawCurrency; transaction: { matchStatus: string | null } | null }>(
+      const rows = await queryAll<{ invoiceId: string; amount: RawCurrency }>(
         'paymentAllocations',
         { filter: { invoiceId: { in: part } } },
-        { invoiceId: true, amount: { amountMicros: true, currencyCode: true }, transaction: { matchStatus: true } },
+        { invoiceId: true, amount: { amountMicros: true, currencyCode: true } },
       );
       for (const a of rows) {
-        if (a.transaction?.matchStatus === MATCH_STATUS.IGNORED) continue;
         totals.set(a.invoiceId, (totals.get(a.invoiceId) ?? 0) + (currencyOrNull(a.amount)?.amountMicros ?? 0));
       }
     }
@@ -225,17 +224,13 @@ export const createTwentyBankStore = (): BankStore => {
     listInvoiceAllocations: async (invoiceId) => {
       const rows = await queryAll<{
         amount: RawCurrency;
-        transaction: { bookingDate: string | null; matchStatus: string | null } | null;
+        transaction: { bookingDate: string | null } | null;
       }>(
         'paymentAllocations',
         { filter: { invoiceId: { eq: invoiceId } } },
-        { amount: { amountMicros: true, currencyCode: true }, transaction: { bookingDate: true, matchStatus: true } },
+        { amount: { amountMicros: true, currencyCode: true }, transaction: { bookingDate: true } },
       );
-      return rows.map((a) => ({
-        amount: currencyOrNull(a.amount),
-        bookingDate: a.transaction?.bookingDate ?? null,
-        matchStatus: a.transaction?.matchStatus ?? null,
-      }));
+      return rows.map((a) => ({ amount: currencyOrNull(a.amount), bookingDate: a.transaction?.bookingDate ?? null }));
     },
 
     updateInvoicePayment: async (invoiceId, payment) => {

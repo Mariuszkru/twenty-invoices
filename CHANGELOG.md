@@ -2,6 +2,11 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.12.0
+
+- "Dopasowanie" on bank transactions has only 3 values: "Dopasowana automatycznie", "Przypisana ręcznie", "Nieprzypisana". "Pominięta" and "Bez faktury" are removed, together with the `bank-transaction-updated` trigger
+- New "Cel płatności" field (`paymentPurpose`, replaces "Rodzaj wydatku"): "Faktura", "Wynagrodzenia", "ZUS", "Urząd skarbowy". Automatically classified ZUS, tax and salary transfers are "Dopasowana automatycznie"; those saved in the "Rozlicz przelew" panel are "Przypisana ręcznie"
+
 ## 0.8.3
 
 - Requires a Twenty server 2.50.0 or newer (`engines.twenty`): file upload and app deploy use the direct-to-storage upload, which older servers lack. CI installs the Twenty CLI 2.50.0

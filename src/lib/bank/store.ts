@@ -8,8 +8,8 @@ import type { Currency } from 'src/lib/sync/mapping';
 export type TransactionStatus = {
   matchStatus: string;
   matchNote: string | null;
-  // tylko dla statusu "Bez faktury"; pracownik tylko dla wynagrodzeń
-  expenseCategory?: string | null;
+  // pusty dla nieprzypisanej; pracownik tylko dla wynagrodzeń
+  paymentPurpose?: string | null;
   employeeId?: string | null;
 };
 
@@ -38,16 +38,14 @@ export type BankStore = {
   createAllocations: (records: AllocationRecord[]) => Promise<void>;
   listTransactionAllocations: (transactionId: string) => Promise<StoredAllocation[]>;
   deleteAllocations: (ids: string[]) => Promise<void>;
-  // faktury obu kierunków ze statusem Niezapłacona/Częściowo; paidAmount = suma rozliczeń (bez pominiętych transakcji)
+  // faktury obu kierunków ze statusem Niezapłacona/Częściowo; paidAmount = suma rozliczeń
   findOpenInvoices: () => Promise<OpenInvoice[]>;
   // faktury już zapłacone (wystawione od `since`); paidAmount jak wyżej
   findPaidInvoices: (since: string) => Promise<OpenInvoice[]>;
   getInvoices: (ids: string[]) => Promise<OpenInvoice[]>;
   getInvoiceGross: (invoiceId: string) => Promise<Currency | null>;
-  // rozliczenia faktury z datą księgowania i statusem ich transakcji
-  listInvoiceAllocations: (
-    invoiceId: string,
-  ) => Promise<{ amount: Currency | null; bookingDate: string | null; matchStatus: string | null }[]>;
+  // rozliczenia faktury z datą księgowania ich transakcji
+  listInvoiceAllocations: (invoiceId: string) => Promise<{ amount: Currency | null; bookingDate: string | null }[]>;
   updateInvoicePayment: (invoiceId: string, payment: InvoicePayment) => Promise<void>;
   listEmployees: () => Promise<Employee[]>;
 };

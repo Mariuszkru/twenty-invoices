@@ -73,7 +73,7 @@ export const ID = {
   btxMatchStatus: '4ecf7cd1-36d7-4e12-8cc4-5d377b78d0f5',
   btxMatchNote: 'a9f9da1c-9d01-4029-acea-3cd600cc95bc',
   btxAllocations: '80f6339e-7fce-4b7e-a7a4-5bb346bdcb8f',
-  btxExpenseCategory: '832db0cf-8371-441c-99ac-bf50e4f6faac',
+  btxPaymentPurpose: '832db0cf-8371-441c-99ac-bf50e4f6faac',
   btxEmployee: 'f6b480fa-75fa-495f-afc7-fbc570c444a4',
 
   empName: 'c158123b-5073-4b62-9ee1-efb7412c8944',
@@ -120,7 +120,6 @@ export const ID = {
   fnBankConnect: 'c7b526b2-ab33-4a21-ad10-9e67bb1b29cb',
   fnBankCallback: 'd6846b17-1ad8-42ec-8cf6-6d753b4783ad',
   fnBankStatus: '415edb07-93ae-4777-9307-a0ce4298a001',
-  fnBankTxUpdated: '330c26e5-3c1b-49e6-ac07-437a6c060c2a',
   fnBankAllocContext: '5d369919-9948-4c0d-a28b-670944f68d55',
   fnBankAllocate: '5c295f93-3cbe-49ab-b161-ac6144a2b914',
   fnAllocChanged: '14934d8c-48b2-4c76-998d-f163ae1e8db6',

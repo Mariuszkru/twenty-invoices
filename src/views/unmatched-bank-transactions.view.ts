@@ -9,7 +9,7 @@ import { ID } from 'src/constants/ids';
 import { MATCH_STATUS } from 'src/constants/options';
 import { APPLICATION_UNIVERSAL_IDENTIFIER } from 'src/constants/universal-identifiers';
 
-// Transakcje bez faktury: do rozliczenia w panelu "Rozlicz przelew" albo oznaczenia jako pominięte.
+// Transakcje bez faktury i bez celu płatności: do rozliczenia w panelu "Rozlicz przelew".
 export default defineView({
   universalIdentifier: ID.viewBankUnmatched,
   name: 'Nieprzypisane transakcje',

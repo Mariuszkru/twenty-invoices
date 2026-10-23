@@ -88,9 +88,9 @@ describe('wydatki bez faktury', () => {
 
     expect(result).toMatchObject({ ok: true, created: 1, unmatched: 0, categorized: 2 });
     // "JAN KOWALSKI" na wyciągu = pracownik "Jan Kowalski"
-    expect(memory.transactions.map((t) => [t.externalId, t.matchStatus, t.expenseCategory, t.employeeId ?? null])).toEqual([
-      ['acc-1:old', 'NO_INVOICE', 'SALARY', 'emp-jan'],
-      ['acc-1:zus', 'NO_INVOICE', 'ZUS', null],
+    expect(memory.transactions.map((t) => [t.externalId, t.matchStatus, t.paymentPurpose, t.employeeId ?? null])).toEqual([
+      ['acc-1:old', 'AUTO', 'SALARY', 'emp-jan'],
+      ['acc-1:zus', 'AUTO', 'ZUS', null],
     ]);
   });
 
@@ -121,12 +121,12 @@ describe('wydatki bez faktury', () => {
     const result = await saveManualAllocation(memory.store, id, [], { category: 'TAX', employeeId: null });
 
     expect(result).toEqual({ allocations: 0, expenseCategory: 'TAX', employeeId: null, invoicesUpdated: 1 });
-    expect(memory.transactions[0]).toMatchObject({ matchStatus: 'NO_INVOICE', expenseCategory: 'TAX' });
+    expect(memory.transactions[0]).toMatchObject({ matchStatus: 'MANUAL', paymentPurpose: 'TAX' });
     expect(memory.allocations).toEqual([]);
     expect(memory.invoices[0].paymentStatus).toBe('UNPAID');
 
     await saveManualAllocation(memory.store, id, [{ invoiceId: 'a', amountMicros: 390_000_000 }]);
-    expect(memory.transactions[0]).toMatchObject({ matchStatus: 'MANUAL', expenseCategory: null });
+    expect(memory.transactions[0]).toMatchObject({ matchStatus: 'MANUAL', paymentPurpose: 'INVOICE' });
   });
 
   it('wynagrodzenie z panelu wymaga pracownika, a panel podpowiada go po odbiorcy', async () => {
@@ -165,8 +165,8 @@ describe('wydatki bez faktury', () => {
 
     await saveManualAllocation(memory.store, id, [], { category: 'SALARY', employeeId: 'emp-2' });
     expect(memory.transactions[0]).toMatchObject({
-      matchStatus: 'NO_INVOICE',
-      expenseCategory: 'SALARY',
+      matchStatus: 'MANUAL',
+      paymentPurpose: 'SALARY',
       employeeId: 'emp-2',
       matchNote: 'Bez faktury: Wynagrodzenia – Mariusz Krukowski (ręcznie)',
     });
@@ -225,7 +225,7 @@ describe('propozycja w panelu Rozlicz przelew', () => {
       note: 'Wynagrodzenia – Mariusz Krukowski (wynagrodzenie w tytule)',
     });
     expect(memory.transactions[0]).toMatchObject({ matchStatus: 'UNMATCHED' });
-    expect(memory.transactions[0].expenseCategory).toBeUndefined();
+    expect(memory.transactions[0].paymentPurpose).toBeUndefined();
   });
 
   it('faktura w tytule: proponuje rozliczenie z fakturą', async () => {
@@ -243,7 +243,7 @@ describe('propozycja w panelu Rozlicz przelew', () => {
   it('bez propozycji, gdy transakcja jest już rozliczona albo nic nie pasuje', async () => {
     const memory = createMemoryBankStore([]);
     const ids = await memory.store.createTransactions([
-      tx({ externalId: 'acc:done', matchStatus: 'NO_INVOICE', expenseCategory: 'ZUS' }),
+      tx({ externalId: 'acc:done', matchStatus: 'AUTO', paymentPurpose: 'ZUS' }),
       tx({ externalId: 'acc:none', counterpartyName: 'Sklep', remittanceInformation: 'Zakupy' }),
     ]);
     expect((await allocationContext(memory.store, ids.get('acc:done')!)).proposal).toBeNull();

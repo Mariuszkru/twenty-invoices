@@ -112,12 +112,11 @@ export const BANK_DIRECTION_OPTIONS = [
   { value: BANK_DIRECTION.DEBIT, label: 'Wydatek', position: 1, color: 'orange' },
 ] as const;
 
+// Jak transakcja została rozliczona; na co poszły pieniądze mówi osobne pole "Cel płatności".
 export const MATCH_STATUS = {
   AUTO: 'AUTO',
   MANUAL: 'MANUAL',
   UNMATCHED: 'UNMATCHED',
-  IGNORED: 'IGNORED',
-  NO_INVOICE: 'NO_INVOICE',
 } as const;
 export type MatchStatus = (typeof MATCH_STATUS)[keyof typeof MATCH_STATUS];
 
@@ -125,19 +124,33 @@ export const MATCH_STATUS_OPTIONS = [
   { value: MATCH_STATUS.AUTO, label: 'Dopasowana automatycznie', position: 0, color: 'green' },
   { value: MATCH_STATUS.MANUAL, label: 'Przypisana ręcznie', position: 1, color: 'blue' },
   { value: MATCH_STATUS.UNMATCHED, label: 'Nieprzypisana', position: 2, color: 'yellow' },
-  { value: MATCH_STATUS.IGNORED, label: 'Pominięta', position: 3, color: 'gray' },
-  { value: MATCH_STATUS.NO_INVOICE, label: 'Bez faktury', position: 4, color: 'purple' },
 ] as const;
 
-// Wydatki bez faktury (status "Bez faktury"): na co poszedł przelew.
-export const EXPENSE_CATEGORY = { SALARY: 'SALARY', ZUS: 'ZUS', TAX: 'TAX' } as const;
+// Cel płatności rozliczonej transakcji: faktura albo wydatek bez faktury (wynagrodzenie, ZUS, urząd skarbowy).
+export const PAYMENT_PURPOSE = { INVOICE: 'INVOICE', SALARY: 'SALARY', ZUS: 'ZUS', TAX: 'TAX' } as const;
+export type PaymentPurpose = (typeof PAYMENT_PURPOSE)[keyof typeof PAYMENT_PURPOSE];
+
+export const PAYMENT_PURPOSE_OPTIONS = [
+  { value: PAYMENT_PURPOSE.INVOICE, label: 'Faktura', position: 0, color: 'green' },
+  { value: PAYMENT_PURPOSE.SALARY, label: 'Wynagrodzenia', position: 1, color: 'blue' },
+  { value: PAYMENT_PURPOSE.ZUS, label: 'ZUS', position: 2, color: 'orange' },
+  { value: PAYMENT_PURPOSE.TAX, label: 'Urząd skarbowy', position: 3, color: 'red' },
+] as const;
+
+// Wydatki bez faktury: cele płatności poza fakturą.
+export const EXPENSE_CATEGORY = {
+  SALARY: PAYMENT_PURPOSE.SALARY,
+  ZUS: PAYMENT_PURPOSE.ZUS,
+  TAX: PAYMENT_PURPOSE.TAX,
+} as const;
 export type ExpenseCategory = (typeof EXPENSE_CATEGORY)[keyof typeof EXPENSE_CATEGORY];
 
-export const EXPENSE_CATEGORY_OPTIONS = [
-  { value: EXPENSE_CATEGORY.SALARY, label: 'Wynagrodzenia', position: 0, color: 'blue' },
-  { value: EXPENSE_CATEGORY.ZUS, label: 'ZUS', position: 1, color: 'orange' },
-  { value: EXPENSE_CATEGORY.TAX, label: 'Podatki', position: 2, color: 'red' },
-] as const;
+export const EXPENSE_CATEGORY_OPTIONS = PAYMENT_PURPOSE_OPTIONS.filter(
+  (o): o is Extract<(typeof PAYMENT_PURPOSE_OPTIONS)[number], { value: ExpenseCategory }> => o.value !== PAYMENT_PURPOSE.INVOICE,
+);
+
+export const isExpenseCategory = (value: string | null | undefined): value is ExpenseCategory =>
+  Object.values(EXPENSE_CATEGORY).some((c) => c === value);
 
 // Skąd pochodzi rozliczenie transakcji z fakturą.
 export const ALLOCATION_ORIGIN = { AUTO: 'AUTO', MANUAL: 'MANUAL' } as const;

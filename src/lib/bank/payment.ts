@@ -1,9 +1,9 @@
-import { MATCH_STATUS, PAYMENT_STATUS } from 'src/constants/options';
+import { PAYMENT_STATUS } from 'src/constants/options';
 import { AMOUNT_TOLERANCE_MICROS } from 'src/lib/bank/match';
 import type { BankStore } from 'src/lib/bank/store';
 import type { Currency } from 'src/lib/sync/mapping';
 
-// Status płatności faktury wyliczany z sumy jej rozliczeń (bez pominiętych transakcji). Ten sam kod obsługuje
+// Status płatności faktury wyliczany z sumy jej rozliczeń. Ten sam kod obsługuje
 // dopasowanie automatyczne, panel "Rozlicz przelew" i ręczne zmiany rozliczeń.
 
 export type InvoicePayment = {
@@ -42,10 +42,7 @@ export const recomputeInvoicePayment = async (store: BankStore, invoiceId: strin
     store.getInvoiceGross(invoiceId),
     store.listInvoiceAllocations(invoiceId),
   ]);
-  const payment = computePayment(
-    gross,
-    allocations.filter((a) => a.matchStatus !== MATCH_STATUS.IGNORED),
-  );
+  const payment = computePayment(gross, allocations);
   await store.updateInvoicePayment(invoiceId, payment);
   return payment;
 };

@@ -2,7 +2,7 @@ import { defineLogicFunction } from 'twenty-sdk/define';
 import type { DatabaseEventPayload, ObjectRecordEvent } from 'twenty-sdk/logic-function';
 
 import { ID } from 'src/constants/ids';
-import { MATCH_STATUS } from 'src/constants/options';
+import { isExpenseCategory, MATCH_STATUS, PAYMENT_PURPOSE } from 'src/constants/options';
 import { recomputeInvoicePayment } from 'src/lib/bank/payment';
 import { createTwentyBankStore } from 'src/lib/bank/twenty-bank-store';
 
@@ -21,12 +21,12 @@ const handler = async (event: DatabaseEventPayload<ObjectRecordEvent<AllocationR
   const transactionIds = [...new Set([before?.transactionId, after?.transactionId].filter((id): id is string => !!id))];
   for (const transactionId of transactionIds) {
     const transaction = await store.getTransaction(transactionId);
-    if (!transaction || transaction.matchStatus === MATCH_STATUS.IGNORED) continue;
+    if (!transaction) continue;
     const allocations = await store.listTransactionAllocations(transactionId);
-    // wydatek bez faktury zostaje nim, dopóki ktoś nie przypnie faktury; wtedy traci rodzaj wydatku
-    if (!allocations.length && transaction.matchStatus === MATCH_STATUS.NO_INVOICE) continue;
+    // wydatek bez faktury zostaje nim, dopóki ktoś nie przypnie faktury; wtedy cel płatności to faktura
+    if (!allocations.length && isExpenseCategory(transaction.paymentPurpose)) continue;
     await store.updateTransaction(transactionId, {
-      expenseCategory: null,
+      paymentPurpose: allocations.length ? PAYMENT_PURPOSE.INVOICE : null,
       employeeId: null,
       matchStatus: allocations.length ? MATCH_STATUS.MANUAL : MATCH_STATUS.UNMATCHED,
       matchNote: 'Rozliczenie zmienione ręcznie',

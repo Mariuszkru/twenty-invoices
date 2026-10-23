@@ -63,9 +63,9 @@ describe('runBankSync', () => {
     const result = await runBankSync(deps);
 
     expect(result).toMatchObject({ ok: true, fetched: 2, created: 2, matched: 1, unmatched: 1, invoicesUpdated: 1 });
-    expect(memory.transactions.map((t) => [t.externalId, t.matchStatus, memory.invoiceIdsOf(t.id)])).toEqual([
-      ['acc-1:r1', 'AUTO', ['inv-1']],
-      ['acc-1:r3', 'UNMATCHED', []],
+    expect(memory.transactions.map((t) => [t.externalId, t.matchStatus, t.paymentPurpose ?? null, memory.invoiceIdsOf(t.id)])).toEqual([
+      ['acc-1:r1', 'AUTO', 'INVOICE', ['inv-1']],
+      ['acc-1:r3', 'UNMATCHED', null, []],
     ]);
     expect(memory.allocations[0]).toMatchObject({ name: 'FV/10/2026/001 ← 1230.00 PLN', origin: 'AUTO' });
     expect(memory.invoices[0]).toMatchObject({
