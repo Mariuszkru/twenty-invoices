@@ -1,4 +1,4 @@
-import { ENTRY_TYPE, type EntryType } from 'src/constants/options';
+import type { EntryType } from 'src/constants/options';
 import { defaultEntryType, formatMoney, lineAllocation, lineSignedNet, remainingLineAmount } from 'src/lib/projects/margin';
 import { completeEntry, refreshLine, refreshProject } from 'src/lib/projects/recompute';
 import type { ProjectOption, ProjectStore } from 'src/lib/projects/store';
@@ -54,9 +54,7 @@ export const pinContext = async (store: ProjectStore, query: string | null): Pro
   return { projects, candidates };
 };
 
-export type PinItem = { lineId: string; amountMicros?: number | null; type?: string | null };
-
-const isEntryType = (value: unknown): value is EntryType => Object.values(ENTRY_TYPE).some((t) => t === value);
+export type PinItem = { lineId: string; amountMicros?: number | null };
 
 // Tworzy przypisania wybranych pozycji do projektu. Najpierw sprawdza wszystkie, więc błąd nie zostawia połowy zapisu.
 export const pinLines = async (
@@ -83,8 +81,9 @@ export const pinLines = async (
     const amount = { amountMicros, currencyCode: net.currencyCode };
     const { overIssue } = lineAllocation(line, [...existing, { amount }]);
     if (overIssue) throw new PinError(`${label}: ${overIssue} Zostało ${formatMoney(remainingLineAmount(line, existing)!)}.`);
-    const type = isEntryType(item.type) ? item.type : defaultEntryType(line.direction);
-    if (!type) throw new PinError(`${label}: wybierz przychód albo koszt.`);
+    // typ wynika z kierunku faktury i nie da się go zmienić w panelu
+    const type = defaultEntryType(line.direction);
+    if (!type) throw new PinError(`${label}: nieznany kierunek faktury, nie da się ustalić przychodu ani kosztu.`);
     planned.push({ projectId, invoiceLineId: line.id, type, amount, note });
   }
 

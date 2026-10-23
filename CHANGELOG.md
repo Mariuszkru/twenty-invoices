@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.14.3
+
+- The "Przypnij pozycje faktur" panel no longer lets you change whether a line is revenue or cost. The type always follows the invoice direction (sale → revenue, purchase → cost) and the server ignores a type sent with the request. Lines without a direction cannot be pinned
+
 ## 0.14.2
 
 - Project code uses the generated `CoreApiClient` again, as the Twenty docs recommend. The plain-GraphQL workaround from 0.14.1 is removed

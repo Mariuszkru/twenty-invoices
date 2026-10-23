@@ -11,7 +11,7 @@ import { Button } from 'twenty-ui/primitives/input';
 import { useTheme } from 'twenty-ui/theme';
 
 import { ID } from 'src/constants/ids';
-import { ENTRY_TYPE, ENTRY_TYPE_OPTIONS, PROJECT_STATUS_OPTIONS } from 'src/constants/options';
+import { ENTRY_TYPE_OPTIONS, PROJECT_STATUS_OPTIONS } from 'src/constants/options';
 import { toMicros } from 'src/lib/decimal';
 
 type Candidate = {
@@ -32,8 +32,11 @@ type Project = { id: string; name: string | null; clientName: string | null; sta
 
 type Context = { ok: boolean; message?: string; projects?: Project[]; candidates?: Candidate[] };
 
-// zaznaczona pozycja: kwota (tekst, z przecinkiem), typ i dane do wyświetlenia także po zmianie wyszukiwania
-type Selection = { amount: string; type: string; candidate: Candidate };
+// zaznaczona pozycja: kwota (tekst, z przecinkiem) i dane do wyświetlenia także po zmianie wyszukiwania;
+// typ (przychód/koszt) wynika z kierunku faktury i nie jest edytowalny
+type Selection = { amount: string; candidate: Candidate };
+
+const typeLabel = (type: string | null) => ENTRY_TYPE_OPTIONS.find((o) => o.value === type)?.label ?? type ?? '';
 
 const SEARCH_DELAY_MS = 400;
 
@@ -98,11 +101,7 @@ const ProjectPin = () => {
       if (next[candidate.id]) {
         delete next[candidate.id];
       } else {
-        next[candidate.id] = {
-          amount: toInput(candidate.remainingMicros),
-          type: candidate.defaultType ?? ENTRY_TYPE.COST,
-          candidate,
-        };
+        next[candidate.id] = { amount: toInput(candidate.remainingMicros), candidate };
       }
       return next;
     });
@@ -115,12 +114,12 @@ const ProjectPin = () => {
   const totals = useMemo(() => {
     const sums = new Map<string, number>();
     for (const s of Object.values(selected)) {
-      const key = `${s.type}|${s.candidate.currencyCode}`;
+      const key = `${s.candidate.defaultType}|${s.candidate.currencyCode}`;
       sums.set(key, (sums.get(key) ?? 0) + (toMicros(s.amount) ?? 0));
     }
     return [...sums].map(([key, micros]) => {
       const [type, currency] = key.split('|');
-      return `${ENTRY_TYPE_OPTIONS.find((o) => o.value === type)?.label ?? type}: ${money(micros, currency)}`;
+      return `${typeLabel(type)}: ${money(micros, currency)}`;
     });
   }, [selected]);
 
@@ -131,7 +130,6 @@ const ProjectPin = () => {
       const items = Object.entries(selected).map(([lineId, s]) => ({
         lineId,
         amountMicros: toMicros(s.amount) ?? Number.NaN,
-        type: s.type,
       }));
       const result = await new RestApiClient().post<{ ok: boolean; message?: string; created?: number }>(
         '/s/projects/pin',
@@ -214,7 +212,8 @@ const ProjectPin = () => {
         {!loading && visible.length === 0 && <div style={muted}>Brak pozycji.</div>}
         {visible.map((c) => {
           const s = selected[c.id];
-          const done = c.remainingMicros === 0;
+          // bez kierunku faktury nie wiadomo, czy to przychód czy koszt
+          const done = c.remainingMicros === 0 || !c.defaultType;
           return (
             <div
               key={c.id}
@@ -235,25 +234,14 @@ const ProjectPin = () => {
                     {c.invoiceName ?? '—'} · {c.counterpartyName ?? '—'} · {formatDate(c.issueDate)}
                   </div>
                   <div style={muted}>
-                    netto {money(c.netMicros, c.currencyCode)} · zostało {money(c.remainingMicros, c.currencyCode)}
+                    {typeLabel(c.defaultType) || 'nieznany kierunek'} · netto {money(c.netMicros, c.currencyCode)} · zostało {money(c.remainingMicros, c.currencyCode)}
                     {c.projectNames.length > 0 && ` · w projektach: ${c.projectNames.join(', ')}`}
                   </div>
                 </div>
               </label>
               {s && (
-                <div style={{ display: 'flex', gap: theme.spacing[2], paddingLeft: theme.spacing[6] }}>
-                  <select
-                    value={s.type}
-                    disabled={busy}
-                    onChange={(e) => update(c.id, { type: e.target.value })}
-                    style={{ ...input, flex: 1 }}
-                  >
-                    {ENTRY_TYPE_OPTIONS.map((o) => (
-                      <option key={o.value} value={o.value}>
-                        {o.label}
-                      </option>
-                    ))}
-                  </select>
+                <div style={{ display: 'flex', alignItems: 'center', gap: theme.spacing[2], paddingLeft: theme.spacing[6] }}>
+                  <span style={{ ...muted, flex: 1 }}>Kwota do przypięcia ({c.currencyCode})</span>
                   <input
                     value={s.amount}
                     inputMode="decimal"

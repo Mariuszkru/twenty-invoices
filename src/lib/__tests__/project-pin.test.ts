@@ -40,7 +40,8 @@ describe('panel Przypnij pozycje faktur', () => {
     const result = await pinLines(memory.store, 'p1', [
       { lineId: 's1' },
       { lineId: 's2', amountMicros: money(100).amountMicros },
-      { lineId: 'z1', type: ENTRY_TYPE.COST },
+      // typ z panelu jest ignorowany: zakup zawsze trafia do kosztów
+      { lineId: 'z1', type: ENTRY_TYPE.REVENUE } as { lineId: string },
     ]);
     expect(result.created).toBe(3);
     expect(memory.project('p1')).toMatchObject({ revenuePln: money(1100), costPln: money(43), marginPln: money(1057) });

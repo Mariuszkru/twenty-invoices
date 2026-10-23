@@ -46,7 +46,7 @@ The bank consent lasts at most 180 days. Rocket.Chat gets a warning 14 days and 
 
 A `project` has a client (a company or a person, exactly one), a status and the computed revenue, cost, margin and margin %. Invoice lines are pinned to it through `projectEntry` records, as revenue or cost:
 
-- An empty type follows the invoice direction (sale → revenue, purchase → cost). An empty amount takes the part of the line not yet pinned anywhere, so a line can be split across several projects.
+- An empty type follows the invoice direction (sale → revenue, purchase → cost); the pin panel always uses that type. An empty amount takes the part of the line not yet pinned anywhere, so a line can be split across several projects.
 - Amounts are net, in the invoice currency, and signed: the "before correction" row of a credit note is negative. They are converted to PLN with the rate the sync used for the line (invoice or NBP). An entry without a rate or in another currency is left out of the margin and gets a note.
 - Revenue and cost are the sums of PLN amounts by type, margin = revenue − cost, margin % = margin / revenue (empty at zero revenue). The `project-entry-changed` trigger recomputes them from scratch on every change, together with the line's "Przypisanie do usługi" status and the over-allocation check.
 - The "Przypnij pozycje faktur" panel (on the project entry list and on a project) pins several lines at once. It searches invoices by number, KSeF number or counterparty and rejects amounts above a line's unallocated rest.
