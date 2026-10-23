@@ -61,6 +61,7 @@ const ProjectPin = () => {
   const [projects, setProjects] = useState<Project[]>([]);
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [query, setQuery] = useState('');
+  const [showSettled, setShowSettled] = useState(false);
   const [selected, setSelected] = useState<Record<string, Selection>>({});
   const [note, setNote] = useState('');
   const [loading, setLoading] = useState(true);
@@ -89,11 +90,14 @@ const ProjectPin = () => {
     return () => clearTimeout(timer);
   }, [query]);
 
+  // pozycje w pełni przypisane do projektów chowamy, dopóki nie włączysz „Pokaż pozycje już rozliczone”
+  const settledCount = candidates.filter((c) => c.remainingMicros === 0 && !selected[c.id]).length;
+
   // zaznaczone zostają na górze listy także wtedy, gdy nie pasują do nowego wyszukiwania
   const visible = useMemo(() => {
     const pinned = Object.values(selected).map((s) => s.candidate);
-    return [...pinned, ...candidates.filter((c) => !selected[c.id])];
-  }, [candidates, selected]);
+    return [...pinned, ...candidates.filter((c) => !selected[c.id] && (showSettled || c.remainingMicros !== 0))];
+  }, [candidates, selected, showSettled]);
 
   const toggle = (candidate: Candidate) => {
     setSelected((current) => {
@@ -208,8 +212,20 @@ const ProjectPin = () => {
           : 'Ostatnie pozycje jeszcze nie w pełni przypisane do projektów.'}
       </div>
 
+      {settledCount > 0 && (
+        <label style={{ ...muted, display: 'flex', alignItems: 'center', gap: theme.spacing[2], cursor: 'pointer' }}>
+          <input type="checkbox" checked={showSettled} onChange={(e) => setShowSettled(e.target.checked)} />
+          Pokaż pozycje już rozliczone ({settledCount})
+        </label>
+      )}
+
       <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing[2] }}>
-        {!loading && visible.length === 0 && <div style={muted}>Brak pozycji.</div>}
+        {!loading && visible.length === 0 && (
+          <div style={muted}>
+            Brak pozycji.
+            {settledCount > 0 && !showSettled ? ' Zaznacz „Pokaż pozycje już rozliczone”.' : ''}
+          </div>
+        )}
         {visible.map((c) => {
           const s = selected[c.id];
           // bez kierunku faktury nie wiadomo, czy to przychód czy koszt

@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.14.5
+
+- The "Przypnij pozycje faktur" panel hides lines already fully pinned to projects, also in search results. A "Pokaż pozycje już rozliczone" checkbox shows them again, as in the "Rozlicz przelewy" panel
+
 ## 0.14.4
 
 - The "Przypnij pozycje faktur" panel search also matches the invoice line name (e.g. "kabel" finds every line with that word), not only the invoice number, KSeF number or counterparty
