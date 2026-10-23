@@ -7,7 +7,8 @@
 ## Commands
 
 - `yarn lint`, `yarn typecheck`, `yarn test:unit` (vitest, `src/**/*.test.ts`). Single test: `yarn vitest run --config vitest.unit.config.ts <path> -t "<name>"`
-- Offline build check: `npx twenty@2.48.0 app build -r local` (uploads nothing)
+- Twenty CLI: the global `twenty` command (2.50+). Do not use the deprecated `yarn twenty ...` bundled with twenty-sdk.
+- Offline build check: `twenty app build` (uploads nothing). Preview changes: `twenty app plan -r <remote>`. Deploy: `twenty app apply -r <remote> --no-delete`
 - **The CLI's default remote is `recoop-me` (production, https://crm.recoop.pl).** Always pass `-r local` for development. Never run `twenty app dev`/`apply` against production without explicit approval.
 
 ## Architecture
@@ -72,23 +73,15 @@
 
 ## Best practice
 
-It's highly recommended to create new app entities using `yarn twenty dev:add`. These are the options:
+Create new app entities with `twenty app add` where it is supported. It generates the required IDs:
 
-| Entity type          | Command                                  | Generated file                        |
-| -------------------- | ---------------------------------------- | ------------------------------------- |
-| Object               | `yarn twenty dev:add object`             | `src/objects/<name>.ts`               |
-| Field                | `yarn twenty dev:add field`              | `src/fields/<name>.ts`                |
-| Logic function       | `yarn twenty dev:add logicFunction`      | `src/logic-functions/<name>.ts`       |
-| Front component      | `yarn twenty dev:add frontComponent`     | `src/front-components/<name>.tsx`     |
-| Role                 | `yarn twenty dev:add role`               | `src/roles/<name>.ts`                 |
-| Skill                | `yarn twenty dev:add skill`              | `src/skills/<name>.ts`                |
-| Agent                | `yarn twenty dev:add agent`              | `src/agents/<name>.ts`                |
-| View                 | `yarn twenty dev:add view`               | `src/views/<name>.ts`                 |
-| Navigation menu item | `yarn twenty dev:add navigationMenuItem` | `src/navigation-menu-items/<name>.ts` |
-| Page layout          | `yarn twenty dev:add pageLayout`         | `src/page-layouts/<name>.ts`          |
-| Page layout tab      | `yarn twenty dev:add pageLayoutTab`      | `src/page-layout-tabs/<name>.ts`      |
-| Command menu item    | `yarn twenty dev:add commandMenuItem`    | `src/command-menu-items/<name>.ts`    |
-| View field           | `yarn twenty dev:add viewField`          | `src/view-fields/<name>.ts`           |
-| Connection provider  | `yarn twenty dev:add connectionProvider` | `src/connection-providers/<name>.ts`  |
+| Entity type     | Command                                                | Generated file                    |
+| --------------- | ------------------------------------------------------ | --------------------------------- |
+| Object          | `twenty app add object --name <name>`                  | `src/objects/<name>.ts`           |
+| Field           | `twenty app add field --name <name> --type <TYPE>`     | `src/fields/<name>.ts`            |
+| Logic function  | `twenty app add logic-function --name <name>`          | `src/logic-functions/<name>.ts`   |
+| Front component | `twenty app add front-component --name <name>`         | `src/front-components/<name>.tsx` |
+
+Other entities (views, navigation menu items, roles, page layouts, command menu items and so on) are written by hand, following the existing files in `src/`. Put new IDs in `src/constants/ids.ts` as valid UUID v4.
 
 This helps automatically generate required IDs etc.
