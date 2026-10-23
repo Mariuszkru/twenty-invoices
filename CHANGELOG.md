@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.8.2
+
+- Panels (e.g. "Rozlicz przelew") showed buttons as plain text on Twenty 2.50: the app bundled twenty-ui 2.48, whose hashed CSS class names no longer match the stylesheet served by the host. twenty-sdk, twenty-client-sdk and twenty-ui are now 2.50.0
+
 ## 0.8.1
 
 - The "Rozlicz przelew" panel lists credit notes with a negative gross amount, so a collective transfer can be split onto invoices and a correction (e.g. 1430 = 1000 + 500 − 70). A correction takes a negative allocation, suggested in full when selected; the total must stay between 0 and the transaction amount
