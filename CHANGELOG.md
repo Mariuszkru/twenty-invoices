@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.12.1
+
+- twenty-sdk, twenty-client-sdk and twenty-ui are now 2.51.1. CI installs the Twenty CLI 2.51.1. A Twenty server 2.50.0 or newer is still enough
+
 ## 0.12.0
 
 - "Dopasowanie" on bank transactions has only 3 values: "Dopasowana automatycznie", "Przypisana ręcznie", "Nieprzypisana". "Pominięta" and "Bez faktury" are removed, together with the `bank-transaction-updated` trigger

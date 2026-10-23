@@ -289,6 +289,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@floating-ui/react@npm:^0.27.15":
+  version: 0.27.20
+  resolution: "@floating-ui/react@npm:0.27.20"
+  dependencies:
+    "@floating-ui/react-dom": "npm:^2.1.9"
+    "@floating-ui/utils": "npm:^0.2.12"
+    tabbable: "npm:^6.0.0"
+  peerDependencies:
+    react: ">=17.0.0"
+    react-dom: ">=17.0.0"
+  checksum: 10c0/5ebeb4c877128e9a274692849ceb2103b370441626e97ade38c25db5d94371dd7274292eda05208cc5d1c92c594a59595a1909799c2ac8ff44f9e651a4fe55b3
+  languageName: node
+  linkType: hard
+
 "@floating-ui/utils@npm:^0.2.12":
   version: 0.2.12
   resolution: "@floating-ui/utils@npm:0.2.12"
@@ -1495,6 +1509,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"date-fns@npm:^4.1.0":
+  version: 4.4.0
+  resolution: "date-fns@npm:4.4.0"
+  checksum: 10c0/988f0a13db183f5dfc85c36bbb6847a9c135a9225888bbea4005876ec15539a8613c21a07370a4e7ea543918d5a1cafb423c528b42cdbbde5fdfddb178126b21
+  languageName: node
+  linkType: hard
+
 "debug@npm:4, debug@npm:^4.1.1":
   version: 4.4.3
   resolution: "debug@npm:4.4.3"
@@ -2093,9 +2114,9 @@ __metadata:
     oxlint: "npm:^0.16.0"
     react: "npm:^19.0.0"
     react-dom: "npm:^19.0.0"
-    twenty-client-sdk: "npm:2.50.0"
-    twenty-sdk: "npm:2.50.0"
-    twenty-ui: "npm:2.50.0"
+    twenty-client-sdk: "npm:2.51.1"
+    twenty-sdk: "npm:2.51.1"
+    twenty-ui: "npm:2.51.1"
     typescript: "npm:^5.9.3"
     vite-tsconfig-paths: "npm:^4.2.1"
     vitest: "npm:^4.0.0"
@@ -2478,6 +2499,24 @@ __metadata:
   languageName: node
   linkType: hard
 
+"react-datepicker@npm:^9.1.0":
+  version: 9.1.0
+  resolution: "react-datepicker@npm:9.1.0"
+  dependencies:
+    "@floating-ui/react": "npm:^0.27.15"
+    clsx: "npm:^2.1.1"
+    date-fns: "npm:^4.1.0"
+  peerDependencies:
+    date-fns-tz: ^3.0.0
+    react: ^16.9.0 || ^17 || ^18 || ^19 || ^19.0.0-rc
+    react-dom: ^16.9.0 || ^17 || ^18 || ^19 || ^19.0.0-rc
+  peerDependenciesMeta:
+    date-fns-tz:
+      optional: true
+  checksum: 10c0/43b58b08f9e4f289a31f2a2dbd0e246e396ad44ebfea4ed8d1393de2a6bded2dad9c2002cfcf70dfbe51aabf5f886b12b1aae8463c5bc35d67b1b22733a8a0f9
+  languageName: node
+  linkType: hard
+
 "react-dom@npm:^19.0.0, react-dom@npm:^19.2.0":
   version: 19.3.0
   resolution: "react-dom@npm:19.3.0"
@@ -2847,6 +2886,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tabbable@npm:^6.0.0":
+  version: 6.5.0
+  resolution: "tabbable@npm:6.5.0"
+  checksum: 10c0/7d778af05a3093800265831198cad9d0024f3d65cdd4405007490f7430b42ff4e80060b4679f45281fb96ddbddc5fb895e8ea36e3ebdc811051e14acc9c7c02c
+  languageName: node
+  linkType: hard
+
 "tagged-tag@npm:^1.0.0":
   version: 1.0.0
   resolution: "tagged-tag@npm:1.0.0"
@@ -2940,22 +2986,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"twenty-client-sdk@npm:2.50.0":
-  version: 2.50.0
-  resolution: "twenty-client-sdk@npm:2.50.0"
+"twenty-client-sdk@npm:2.51.1":
+  version: 2.51.1
+  resolution: "twenty-client-sdk@npm:2.51.1"
   dependencies:
     "@genql/runtime": "npm:^2.10.0"
     esbuild: "npm:^0.28.1"
     graphql: "npm:^16.8.1"
     lodash: "npm:^4.17.21"
     prettier: "npm:^3.8.3"
-  checksum: 10c0/d1a545e9f986747dcf30efbb37dbf8a6a0da773a2c91ef83cc04cf7c4a90767d7bfbb223dacc293e7f5f8fdcfe431c67690d838ff9553eb24dec0c897d75dd66
+  checksum: 10c0/9e271c43448286fde8aac9502bcf11b58f0a885f398af8075ab92889d79d57f17a6c56663acb41a4c383d7026d331e974792a765963973617fc2da05494ddf22
   languageName: node
   linkType: hard
 
-"twenty-sdk@npm:2.50.0":
-  version: 2.50.0
-  resolution: "twenty-sdk@npm:2.50.0"
+"twenty-sdk@npm:2.51.1":
+  version: 2.51.1
+  resolution: "twenty-sdk@npm:2.51.1"
   dependencies:
     "@sniptt/guards": "npm:^0.2.0"
     axios: "npm:^1.16.0"
@@ -2974,24 +3020,25 @@ __metadata:
     semver: "npm:7.6.3"
     sharp: "npm:^0.35.5"
     tinyglobby: "npm:^0.2.15"
-    twenty-client-sdk: "npm:2.50.0"
+    twenty-client-sdk: "npm:2.51.1"
     typescript: "npm:^5.9.3"
     uuid: "npm:^13.0.2"
   bin:
     twenty: dist/cli.cjs
-  checksum: 10c0/82238005a797f009f615bce730e0fb7066c76e673e3153332a0d3b6cf5a4fb5794c8e2140e698c4b8004e683483082371d74dea8d21a7f8b8959823d90376152
+  checksum: 10c0/d5a8915ec8e54c2d063d47eeb4b31fe531230a3e6c98bf54997891b93731a363656013042e996d13dbf5fc373fc64a642b5b73eee13523856ca2d822654eb2cf
   languageName: node
   linkType: hard
 
-"twenty-ui@npm:2.50.0":
-  version: 2.50.0
-  resolution: "twenty-ui@npm:2.50.0"
+"twenty-ui@npm:2.51.1":
+  version: 2.51.1
+  resolution: "twenty-ui@npm:2.51.1"
   dependencies:
     "@base-ui/react": "npm:^1.9.0"
     "@base-ui/utils": "npm:0.5.0"
     "@sniptt/guards": "npm:^0.2.0"
     "@tabler/icons-react": "npm:^3.31.0"
     clsx: "npm:^2.1.1"
+    react-datepicker: "npm:^9.1.0"
     type-fest: "npm:^4.10.1"
     zod: "npm:^4.1.11"
   peerDependencies:
@@ -3004,7 +3051,7 @@ __metadata:
       optional: true
     monaco-editor:
       optional: true
-  checksum: 10c0/00d89bc173cab13eeee4666ce2608dd8590d94428453d9fcfb2df5f9c3057adbe306df4a50a2b9fa2f76de3353384503d1679cbf3492a32afac5ddca2a49cc73
+  checksum: 10c0/483d907aa7b16dfac0d6021e3161e422b4e9e4535987d240e5391b370ac90fbc02e00dadd8b6098ae1106425cfcfdd88e92da3dce58ee40304d4350df65f9519
   languageName: node
   linkType: hard
 
