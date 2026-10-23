@@ -1,7 +1,7 @@
-import { ALLOCATION_ORIGIN, MATCH_STATUS } from 'src/constants/options';
+import { ALLOCATION_ORIGIN, EXPENSE_CATEGORY, MATCH_STATUS } from 'src/constants/options';
 import type { StoredBankSession } from 'src/lib/bank/consent';
 import { isConsentError, type EnableBankingClient } from 'src/lib/bank/enablebanking-http';
-import { classifyExpense, expenseLabel } from 'src/lib/bank/expense-category';
+import { classifyExpense, expenseLabel, findEmployeeId } from 'src/lib/bank/expense-category';
 import {
   AMOUNT_TOLERANCE_MICROS,
   matchTransaction,
@@ -17,7 +17,7 @@ import {
   noConsentMessage,
 } from 'src/lib/bank/messages';
 import { allocationName, recomputeInvoicePayment } from 'src/lib/bank/payment';
-import type { AllocationRecord, BankStore, TransactionStatus } from 'src/lib/bank/store';
+import type { AllocationRecord, BankStore, Employee, TransactionStatus } from 'src/lib/bank/store';
 import { fetchBookedTransactions, type BankTransactionRecord } from 'src/lib/bank/transactions';
 import { errorMessage } from 'src/lib/sync/import-details';
 import type { KvStore } from 'src/lib/sync/rate-budget';
@@ -164,16 +164,22 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
         amount: { amountMicros: a.amountMicros, currencyCode: t.amount.currencyCode },
         origin: ALLOCATION_ORIGIN.AUTO,
       }));
-    // przelew bez faktury: ZUS, podatek albo wynagrodzenie dostaje rodzaj wydatku zamiast statusu nieprzypisanej
-    const expenseStatus = (t: MatchableTransaction): TransactionStatus | null => {
+    // przelew bez faktury: ZUS, podatek albo wynagrodzenie dostaje rodzaj wydatku zamiast statusu nieprzypisanej;
+    // wynagrodzenie dostaje pracownika, gdy odbiorca jednoznacznie pasuje do listy Pracownicy
+    let employees: Employee[] | null = null;
+    const expenseStatus = async (t: MatchableTransaction): Promise<TransactionStatus | null> => {
       const expense = classifyExpense(t);
-      return expense
-        ? {
-            matchStatus: MATCH_STATUS.NO_INVOICE,
-            matchNote: `Bez faktury: ${expenseLabel(expense.category)} (${expense.note})`,
-            expenseCategory: expense.category,
-          }
-        : null;
+      if (!expense) return null;
+      const employeeId =
+        expense.category === EXPENSE_CATEGORY.SALARY
+          ? findEmployeeId((employees ??= await deps.store.listEmployees()), t.counterpartyName)
+          : null;
+      return {
+        matchStatus: MATCH_STATUS.NO_INVOICE,
+        matchNote: `Bez faktury: ${expenseLabel(expense.category)} (${expense.note})`,
+        expenseCategory: expense.category,
+        employeeId,
+      };
     };
 
     const today = isoDate(startedAt);
@@ -193,20 +199,23 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
         .sort((a, b) => (a.bookingDate ?? '').localeCompare(b.bookingDate ?? ''));
 
       const matches = fresh.map((t) => ({ t, match: findMatch(t) }));
-      const records: (BankTransactionRecord & TransactionStatus)[] = matches.map(({ t, match }) => {
+      const records: (BankTransactionRecord & TransactionStatus)[] = [];
+      for (const { t, match } of matches) {
         if (match.allocations.length) {
           summary.matched++;
-          return { ...t, matchStatus: MATCH_STATUS.AUTO, matchNote: match.note };
+          records.push({ ...t, matchStatus: MATCH_STATUS.AUTO, matchNote: match.note });
+          continue;
         }
-        const expense = expenseStatus(t);
+        const expense = await expenseStatus(t);
         if (expense) {
           summary.categorized++;
-          return { ...t, ...expense };
+          records.push({ ...t, ...expense });
+          continue;
         }
         summary.unmatched++;
         freshUnmatched.add(t.externalId);
-        return { ...t, matchStatus: MATCH_STATUS.UNMATCHED, matchNote: match.note };
-      });
+        records.push({ ...t, matchStatus: MATCH_STATUS.UNMATCHED, matchNote: match.note });
+      }
       if (records.length) {
         const ids = await deps.store.createTransactions(records);
         const allocations = matches.flatMap(({ t, match }) => {
@@ -226,7 +235,7 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
       const match = findMatch(t);
       if (!match.allocations.length) {
         // nowe z tego przebiegu już sprawdziliśmy; wcześniejsze nieprzypisane (np. sprzed tej funkcji) klasyfikujemy teraz
-        const expense = freshUnmatched.has(t.externalId) ? null : expenseStatus(t);
+        const expense = freshUnmatched.has(t.externalId) ? null : await expenseStatus(t);
         if (expense) {
           await deps.store.updateTransaction(t.id, expense);
           summary.categorized++;

@@ -1,5 +1,6 @@
 import { BANK_DIRECTION, EXPENSE_CATEGORY, EXPENSE_CATEGORY_OPTIONS, type ExpenseCategory } from 'src/constants/options';
 import type { MatchableTransaction } from 'src/lib/bank/match';
+import type { Employee } from 'src/lib/bank/store';
 
 // Wydatki bez faktury (status "Bez faktury"): ZUS, podatki i wynagrodzenia. Sprawdzamy dopiero wtedy, gdy przelew
 // nie pasuje do żadnej faktury. Rachunki ZUS i urzędów skarbowych to mikrorachunki o stałym numerze rozliczeniowym,
@@ -41,3 +42,13 @@ export const classifyExpense = (tx: MatchableTransaction): ExpenseClassification
 
 export const expenseLabel = (category: string | null | undefined) =>
   EXPENSE_CATEGORY_OPTIONS.find((o) => o.value === category)?.label ?? category ?? '';
+
+// Pracownik po odbiorcy przelewu: te same słowa imienia i nazwiska w dowolnej kolejności, tylko jednoznaczne trafienie.
+const nameKey = (text: string | null) => normalize(text).split(/[^A-Z0-9]+/).filter(Boolean).sort().join(' ');
+
+export const findEmployeeId = (employees: Employee[], counterpartyName: string | null): string | null => {
+  const key = nameKey(counterpartyName);
+  if (!key.includes(' ')) return null;
+  const hits = employees.filter((e) => nameKey(e.name) === key);
+  return hits.length === 1 ? hits[0].id : null;
+};

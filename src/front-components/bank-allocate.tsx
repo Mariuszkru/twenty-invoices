@@ -6,7 +6,7 @@ import { Button } from 'twenty-ui/primitives/input';
 import { useTheme } from 'twenty-ui/theme';
 
 import { ID } from 'src/constants/ids';
-import { EXPENSE_CATEGORY_OPTIONS } from 'src/constants/options';
+import { EXPENSE_CATEGORY, EXPENSE_CATEGORY_OPTIONS } from 'src/constants/options';
 import { toMicros } from 'src/lib/decimal';
 
 type Candidate = {
@@ -34,9 +34,22 @@ type Context = {
     counterpartyName: string | null;
     remittanceInformation: string | null;
     expenseCategory: string | null;
+    employeeId: string | null;
   };
   candidates?: Candidate[];
+  employees?: { id: string; name: string | null }[];
+  suggestedEmployeeId?: string | null;
 };
+
+type Tab = 'invoices' | 'other';
+const TABS: { value: Tab; label: string }[] = [
+  { value: 'invoices', label: 'Faktury' },
+  { value: 'other', label: 'Inne wydatki' },
+];
+// kolejność jak na wyciągu: ZUS, urząd skarbowy, wynagrodzenia
+const OTHER_EXPENSES = [EXPENSE_CATEGORY.ZUS, EXPENSE_CATEGORY.TAX, EXPENSE_CATEGORY.SALARY].map(
+  (value) => EXPENSE_CATEGORY_OPTIONS.find((o) => o.value === value)!,
+);
 
 const money = (micros: number, currency: string) =>
   `${new Intl.NumberFormat('pl-PL', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(micros / 1_000_000)} ${currency}`;
@@ -45,8 +58,8 @@ const toInput = (micros: number) => (micros / 1_000_000).toFixed(2).replace('.',
 
 const formatDate = (iso: string | null) => (iso ? iso.slice(0, 10).split('-').reverse().join('.') : '—');
 
-// Panel boczny rozliczenia transakcji: wybór jednej albo kilku faktur (przelew zbiorczy) z kwotami
-// albo, dla wydatku, rodzaju wydatku bez faktury (ZUS, podatki, wynagrodzenia).
+// Panel boczny rozliczenia transakcji. Zakładka "Faktury": wybór jednej albo kilku faktur (przelew zbiorczy) z kwotami.
+// Zakładka "Inne wydatki" (tylko wydatki): ZUS, podatki albo wynagrodzenie z wyborem pracownika.
 const BankAllocate = () => {
   const theme = useTheme();
   const selectedIds = useSelectedRecordIds();
@@ -55,8 +68,10 @@ const BankAllocate = () => {
   const [context, setContext] = useState<Context | null>(null);
   // kwota wpisana dla zaznaczonych faktur (tekst, z przecinkiem)
   const [selected, setSelected] = useState<Record<string, string>>({});
-  // rodzaj wydatku bez faktury – wyklucza wybór faktur
+  // zapis dotyczy aktywnej zakładki: faktury albo rodzaj wydatku bez faktury
+  const [tab, setTab] = useState<Tab>('invoices');
   const [category, setCategory] = useState<string | null>(null);
+  const [employeeId, setEmployeeId] = useState<string | null>(null);
   const [filter, setFilter] = useState('');
   const [showSettled, setShowSettled] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -73,6 +88,8 @@ const BankAllocate = () => {
         }
         setContext(result);
         setCategory(result.transaction?.expenseCategory ?? null);
+        setEmployeeId(result.suggestedEmployeeId ?? null);
+        setTab(result.transaction?.expenseCategory ? 'other' : 'invoices');
         setSelected(
           Object.fromEntries(
             (result.candidates ?? []).filter((c) => c.allocatedMicros !== 0).map((c) => [c.id, toInput(c.allocatedMicros)]),
@@ -104,7 +121,6 @@ const BankAllocate = () => {
   }, [context, filter, selected, showSettled]);
 
   const toggle = (candidate: Candidate) => {
-    setCategory(null);
     setSelected((current) => {
       const next = { ...current };
       if (next[candidate.id] !== undefined) {
@@ -119,10 +135,10 @@ const BankAllocate = () => {
     });
   };
 
-  const pickCategory = (value: string) => {
-    setSelected({});
-    setCategory((current) => (current === value ? null : value));
-  };
+  const isDebit = transaction?.direction === 'DEBIT';
+  const otherTab = isDebit && tab === 'other';
+  const employees = context?.employees ?? [];
+  const otherReady = !!category && (category !== EXPENSE_CATEGORY.SALARY || !!employeeId);
 
   const save = async () => {
     if (!transactionId) return;
@@ -135,14 +151,16 @@ const BankAllocate = () => {
       }));
       const result = await new RestApiClient().post<{ ok: boolean; message?: string; allocations?: number }>(
         '/s/bank/allocate',
-        { transactionId, allocations: category ? [] : allocations, expenseCategory: category },
+        otherTab
+          ? { transactionId, allocations: [], expenseCategory: category, employeeId }
+          : { transactionId, allocations },
       );
       if (!result.ok) {
         setError(result.message ?? 'Nie udało się zapisać rozliczenia.');
         return;
       }
       await enqueueSnackbar({
-        message: category
+        message: otherTab
           ? `Zapisano wydatek bez faktury: ${EXPENSE_CATEGORY_OPTIONS.find((o) => o.value === category)?.label ?? category}.`
           : result.allocations
             ? `Zapisano rozliczenie: ${result.allocations} fakt.`
@@ -203,7 +221,34 @@ const BankAllocate = () => {
         </div>
       )}
 
-      {transaction && (
+      {isDebit && (
+        <div style={{ display: 'flex', gap: theme.spacing[1], borderBottom: `1px solid ${theme.border.color.medium}` }}>
+          {TABS.map((t) => (
+            <button
+              key={t.value}
+              type="button"
+              disabled={busy}
+              onClick={() => setTab(t.value)}
+              style={{
+                padding: `${theme.spacing[2]} ${theme.spacing[3]}`,
+                marginBottom: -1,
+                border: 'none',
+                borderBottom: `2px solid ${tab === t.value ? theme.color.blue : 'transparent'}`,
+                background: 'transparent',
+                color: tab === t.value ? theme.font.color.primary : theme.font.color.tertiary,
+                fontFamily: theme.font.family,
+                fontSize: theme.font.size.md,
+                fontWeight: tab === t.value ? theme.font.weight.medium : theme.font.weight.regular,
+                cursor: 'pointer',
+              }}
+            >
+              {t.label}
+            </button>
+          ))}
+        </div>
+      )}
+
+      {transaction && !otherTab && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: theme.spacing[4] }}>
           <div>
             <div style={muted}>Rozliczono</div>
@@ -218,32 +263,54 @@ const BankAllocate = () => {
         </div>
       )}
 
-      {transaction?.direction === 'DEBIT' && (
+      {otherTab && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing[2] }}>
-          <div style={muted}>Wydatek bez faktury</div>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: theme.spacing[2] }}>
-            {EXPENSE_CATEGORY_OPTIONS.map((o) => (
-              <label
-                key={o.value}
-                style={{
-                  ...box,
-                  padding: `${theme.spacing[1]} ${theme.spacing[2]}`,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: theme.spacing[2],
-                  cursor: 'pointer',
-                  borderColor: category === o.value ? theme.color.blue : theme.border.color.medium,
-                }}
+          <div style={muted}>Wydatek bez faktury – zapis usuwa rozliczenia tej transakcji z fakturami.</div>
+          {OTHER_EXPENSES.map((o) => (
+            <label
+              key={o.value}
+              style={{
+                ...box,
+                padding: theme.spacing[2],
+                display: 'flex',
+                alignItems: 'center',
+                gap: theme.spacing[2],
+                cursor: 'pointer',
+                borderColor: category === o.value ? theme.color.blue : theme.border.color.medium,
+              }}
+            >
+              <input
+                type="radio"
+                name="expense-category"
+                checked={category === o.value}
+                disabled={busy}
+                onChange={() => setCategory(o.value)}
+              />
+              {o.label}
+            </label>
+          ))}
+          {category === EXPENSE_CATEGORY.SALARY &&
+            (employees.length ? (
+              <select
+                value={employeeId ?? ''}
+                disabled={busy}
+                onChange={(e) => setEmployeeId(e.target.value || null)}
+                style={{ ...input, width: '100%', boxSizing: 'border-box' }}
               >
-                <input type="checkbox" checked={category === o.value} disabled={busy} onChange={() => pickCategory(o.value)} />
-                {o.label}
-              </label>
+                <option value="">Wybierz pracownika</option>
+                {employees.map((e) => (
+                  <option key={e.id} value={e.id}>
+                    {e.name ?? 'bez nazwy'}
+                  </option>
+                ))}
+              </select>
+            ) : (
+              <div style={muted}>Brak pracowników. Dodaj ich na liście Faktury KSeF › Pracownicy.</div>
             ))}
-          </div>
         </div>
       )}
 
-      {transaction && !category && (
+      {transaction && !otherTab && (
         <input
           value={filter}
           placeholder="Szukaj faktury po numerze albo kontrahencie"
@@ -252,14 +319,14 @@ const BankAllocate = () => {
         />
       )}
 
-      {transaction && !category && settledCount > 0 && (
+      {transaction && !otherTab && settledCount > 0 && (
         <label style={{ ...muted, display: 'flex', alignItems: 'center', gap: theme.spacing[2], cursor: 'pointer' }}>
           <input type="checkbox" checked={showSettled} onChange={(e) => setShowSettled(e.target.checked)} />
           Pokaż faktury już zapłacone ({settledCount})
         </label>
       )}
 
-      {transaction && !category && (
+      {transaction && !otherTab && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: theme.spacing[2] }}>
           {visible.length === 0 && (
             <div style={muted}>
@@ -324,17 +391,20 @@ const BankAllocate = () => {
 
       {transaction && (
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: theme.spacing[2] }}>
-          <Button variant="solid" color="accent" loading={busy} disabled={busy || leftMicros < -10_000} onClick={save}>
+          <Button
+            variant="solid"
+            color="accent"
+            loading={busy}
+            disabled={busy || (otherTab ? !otherReady : leftMicros < -10_000)}
+            onClick={save}
+          >
             Zapisz rozliczenie
           </Button>
           <Button
             variant="ghost"
             color="neutral"
-            disabled={busy || (Object.keys(selected).length === 0 && !category)}
-            onClick={() => {
-              setSelected({});
-              setCategory(null);
-            }}
+            disabled={busy || (otherTab ? !category : Object.keys(selected).length === 0)}
+            onClick={() => (otherTab ? setCategory(null) : setSelected({}))}
           >
             Wyczyść
           </Button>

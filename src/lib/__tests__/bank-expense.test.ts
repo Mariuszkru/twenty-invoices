@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { saveManualAllocation } from 'src/lib/bank/allocate';
+import { allocationContext, saveManualAllocation } from 'src/lib/bank/allocate';
 import { classifyExpense } from 'src/lib/bank/expense-category';
 import { runBankSync } from 'src/lib/bank/run-bank-sync';
 import { apiTransaction, createFakeEnableBanking, createMemoryBankStore, openInvoice } from 'src/lib/__tests__/fake-enablebanking';
@@ -50,7 +50,10 @@ describe('wydatki bez faktury', () => {
         ],
       },
     });
-    const memory = createMemoryBankStore([]);
+    const memory = createMemoryBankStore([], [
+      { id: 'emp-jan', name: 'Jan Kowalski' },
+      { id: 'emp-anna', name: 'Anna Nowak' },
+    ]);
     await memory.store.createTransactions([
       {
         externalId: 'acc-1:old',
@@ -84,9 +87,10 @@ describe('wydatki bez faktury', () => {
     });
 
     expect(result).toMatchObject({ ok: true, created: 1, unmatched: 0, categorized: 2 });
-    expect(memory.transactions.map((t) => [t.externalId, t.matchStatus, t.expenseCategory])).toEqual([
-      ['acc-1:old', 'NO_INVOICE', 'SALARY'],
-      ['acc-1:zus', 'NO_INVOICE', 'ZUS'],
+    // "JAN KOWALSKI" na wyciągu = pracownik "Jan Kowalski"
+    expect(memory.transactions.map((t) => [t.externalId, t.matchStatus, t.expenseCategory, t.employeeId ?? null])).toEqual([
+      ['acc-1:old', 'NO_INVOICE', 'SALARY', 'emp-jan'],
+      ['acc-1:zus', 'NO_INVOICE', 'ZUS', null],
     ]);
   });
 
@@ -114,15 +118,59 @@ describe('wydatki bez faktury', () => {
     await saveManualAllocation(memory.store, id, [{ invoiceId: 'a', amountMicros: 390_000_000 }]);
     expect(memory.invoices[0].paymentStatus).toBe('PAID');
 
-    const result = await saveManualAllocation(memory.store, id, [], 'TAX');
+    const result = await saveManualAllocation(memory.store, id, [], { category: 'TAX', employeeId: null });
 
-    expect(result).toEqual({ allocations: 0, expenseCategory: 'TAX', invoicesUpdated: 1 });
+    expect(result).toEqual({ allocations: 0, expenseCategory: 'TAX', employeeId: null, invoicesUpdated: 1 });
     expect(memory.transactions[0]).toMatchObject({ matchStatus: 'NO_INVOICE', expenseCategory: 'TAX' });
     expect(memory.allocations).toEqual([]);
     expect(memory.invoices[0].paymentStatus).toBe('UNPAID');
 
     await saveManualAllocation(memory.store, id, [{ invoiceId: 'a', amountMicros: 390_000_000 }]);
     expect(memory.transactions[0]).toMatchObject({ matchStatus: 'MANUAL', expenseCategory: null });
+  });
+
+  it('wynagrodzenie z panelu wymaga pracownika, a panel podpowiada go po odbiorcy', async () => {
+    const memory = createMemoryBankStore([], [
+      { id: 'emp-1', name: 'Marcin Mućka' },
+      { id: 'emp-2', name: 'Mariusz Krukowski' },
+    ]);
+    const ids = await memory.store.createTransactions([
+      {
+        externalId: 'acc:pay',
+        name: 'Pensja',
+        bookingDate: '2026-10-09',
+        valueDate: '2026-10-09',
+        direction: 'DEBIT',
+        amount: PLN(1137.5),
+        counterpartyName: 'MUĆKA MARCIN',
+        counterpartyAccount: null,
+        remittanceInformation: 'Przelew',
+        accountIban: null,
+        matchStatus: 'UNMATCHED',
+        matchNote: null,
+      },
+    ]);
+    const id = ids.get('acc:pay')!;
+
+    const context = await allocationContext(memory.store, id);
+    expect(context.employees).toHaveLength(2);
+    expect(context.suggestedEmployeeId).toBe('emp-1');
+
+    await expect(saveManualAllocation(memory.store, id, [], { category: 'SALARY', employeeId: null })).rejects.toThrow(
+      'Wybierz pracownika',
+    );
+    await expect(saveManualAllocation(memory.store, id, [], { category: 'SALARY', employeeId: 'nope' })).rejects.toThrow(
+      'Nie znaleziono pracownika',
+    );
+
+    await saveManualAllocation(memory.store, id, [], { category: 'SALARY', employeeId: 'emp-2' });
+    expect(memory.transactions[0]).toMatchObject({
+      matchStatus: 'NO_INVOICE',
+      expenseCategory: 'SALARY',
+      employeeId: 'emp-2',
+      matchNote: 'Bez faktury: Wynagrodzenia – Mariusz Krukowski (ręcznie)',
+    });
+    expect((await allocationContext(memory.store, id)).transaction).toMatchObject({ expenseCategory: 'SALARY', employeeId: 'emp-2' });
   });
 
   it('odrzuca rodzaj wydatku dla wpływu i razem z fakturą', async () => {
@@ -143,6 +191,6 @@ describe('wydatki bez faktury', () => {
         matchNote: null,
       },
     ]);
-    await expect(saveManualAllocation(memory.store, ids.get('acc:in')!, [], 'ZUS')).rejects.toThrow('tylko wydatków');
+    await expect(saveManualAllocation(memory.store, ids.get('acc:in')!, [], { category: 'ZUS', employeeId: null })).rejects.toThrow('tylko wydatków');
   });
 });

@@ -8,9 +8,12 @@ import type { Currency } from 'src/lib/sync/mapping';
 export type TransactionStatus = {
   matchStatus: string;
   matchNote: string | null;
-  // tylko dla statusu "Bez faktury"
+  // tylko dla statusu "Bez faktury"; pracownik tylko dla wynagrodzeń
   expenseCategory?: string | null;
+  employeeId?: string | null;
 };
+
+export type Employee = { id: string; name: string | null };
 
 export type StoredTransaction = BankTransactionRecord & TransactionStatus & { id: string };
 
@@ -46,4 +49,5 @@ export type BankStore = {
     invoiceId: string,
   ) => Promise<{ amount: Currency | null; bookingDate: string | null; matchStatus: string | null }[]>;
   updateInvoicePayment: (invoiceId: string, payment: InvoicePayment) => Promise<void>;
+  listEmployees: () => Promise<Employee[]>;
 };

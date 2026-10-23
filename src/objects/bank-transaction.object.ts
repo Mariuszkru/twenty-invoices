@@ -1,4 +1,4 @@
-import { defineObject, FieldType, RelationType } from 'twenty-sdk/define';
+import { defineObject, FieldType, OnDeleteAction, RelationType } from 'twenty-sdk/define';
 
 import { ID } from 'src/constants/ids';
 import {
@@ -107,6 +107,21 @@ export default defineObject({
       description: 'Wydatek bez faktury: wynagrodzenia, ZUS albo podatki. Ustawiany automatycznie albo w panelu "Rozlicz przelew".',
       icon: 'IconCategory',
       options: [...EXPENSE_CATEGORY_OPTIONS],
+    },
+    {
+      universalIdentifier: ID.btxEmployee,
+      name: 'employee',
+      type: FieldType.RELATION,
+      label: 'Pracownik',
+      description: 'Pracownik, którego dotyczy wynagrodzenie (rodzaj wydatku "Wynagrodzenia").',
+      icon: 'IconUserDollar',
+      relationTargetObjectMetadataUniversalIdentifier: ID.employeeObject,
+      relationTargetFieldMetadataUniversalIdentifier: ID.empSalaryTransactions,
+      universalSettings: {
+        relationType: RelationType.MANY_TO_ONE,
+        onDelete: OnDeleteAction.SET_NULL,
+        joinColumnName: 'employeeId',
+      },
     },
     {
       universalIdentifier: ID.btxMatchNote,

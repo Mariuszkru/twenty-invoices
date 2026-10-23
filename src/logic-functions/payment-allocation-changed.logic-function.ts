@@ -27,6 +27,7 @@ const handler = async (event: DatabaseEventPayload<ObjectRecordEvent<AllocationR
     if (!allocations.length && transaction.matchStatus === MATCH_STATUS.NO_INVOICE) continue;
     await store.updateTransaction(transactionId, {
       expenseCategory: null,
+      employeeId: null,
       matchStatus: allocations.length ? MATCH_STATUS.MANUAL : MATCH_STATUS.UNMATCHED,
       matchNote: 'Rozliczenie zmienione ręcznie',
     });

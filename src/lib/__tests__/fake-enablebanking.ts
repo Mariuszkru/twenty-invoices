@@ -2,7 +2,7 @@ import { MATCH_STATUS } from 'src/constants/options';
 import { EnableBankingApiError, type EnableBankingClient } from 'src/lib/bank/enablebanking-http';
 import type { OpenInvoice } from 'src/lib/bank/match';
 import type { InvoicePayment } from 'src/lib/bank/payment';
-import type { BankStore, StoredAllocation, StoredTransaction } from 'src/lib/bank/store';
+import type { BankStore, Employee, StoredAllocation, StoredTransaction } from 'src/lib/bank/store';
 import type { ApiTransaction } from 'src/lib/bank/transactions';
 
 // Fałszywe API Enable Banking (bez sieci) i magazyn transakcji w pamięci do testów wyciągów.
@@ -76,7 +76,7 @@ export const apiTransaction = (overrides: Partial<ApiTransaction> & { amount?: s
 
 export type MemoryInvoice = OpenInvoice & { paymentStatus: string; paidAt: string | null };
 
-export const createMemoryBankStore = (invoices: MemoryInvoice[]) => {
+export const createMemoryBankStore = (invoices: MemoryInvoice[], employees: Employee[] = []) => {
   const transactions: StoredTransaction[] = [];
   const allocations: StoredAllocation[] = [];
   const statusOf = (transactionId: string) => transactions.find((t) => t.id === transactionId)?.matchStatus ?? null;
@@ -136,6 +136,7 @@ export const createMemoryBankStore = (invoices: MemoryInvoice[]) => {
     updateInvoicePayment: async (id, payment: InvoicePayment) => {
       Object.assign(invoices.find((i) => i.id === id)!, payment);
     },
+    listEmployees: async () => structuredClone(employees),
   };
   // faktury, do których przypisano transakcję (kolejność rozliczeń)
   const invoiceIdsOf = (transactionId: string) =>

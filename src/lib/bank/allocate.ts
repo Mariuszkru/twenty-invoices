@@ -1,8 +1,8 @@
 import { ALLOCATION_ORIGIN, BANK_DIRECTION, DIRECTION, EXPENSE_CATEGORY, MATCH_STATUS } from 'src/constants/options';
-import { expenseLabel } from 'src/lib/bank/expense-category';
+import { expenseLabel, findEmployeeId } from 'src/lib/bank/expense-category';
 import { AMOUNT_TOLERANCE_MICROS, normalizeAccount, remainingMicros, type OpenInvoice } from 'src/lib/bank/match';
 import { allocationName, recomputeInvoicePayment } from 'src/lib/bank/payment';
-import type { BankStore, StoredTransaction } from 'src/lib/bank/store';
+import type { BankStore, Employee, StoredTransaction } from 'src/lib/bank/store';
 
 // Ręczne rozliczenie transakcji w panelu "Rozlicz przelew": lista faktur do wyboru i zapis rozliczeń.
 // Zapis zastępuje wszystkie rozliczenia transakcji i przelicza płatność faktur, których dotyczył przed i po zmianie.
@@ -44,8 +44,12 @@ export type AllocationContext = {
     | 'remittanceInformation'
     | 'matchStatus'
     | 'expenseCategory'
+    | 'employeeId'
   >;
   candidates: AllocationCandidate[];
+  // lista do wyboru przy wynagrodzeniu i pracownik podpowiedziany po odbiorcy przelewu
+  employees: Employee[];
+  suggestedEmployeeId: string | null;
 };
 
 const MAX_CANDIDATES = 100;
@@ -118,23 +122,42 @@ export const allocationContext = async (store: BankStore, transactionId: string)
     .slice(0, MAX_CANDIDATES);
 
   const { id, name, bookingDate, direction, amount, counterpartyName, remittanceInformation, matchStatus } = transaction;
-  const expenseCategory = matchStatus === MATCH_STATUS.NO_INVOICE ? (transaction.expenseCategory ?? null) : null;
+  const noInvoice = matchStatus === MATCH_STATUS.NO_INVOICE;
+  const expenseCategory = noInvoice ? (transaction.expenseCategory ?? null) : null;
+  const employeeId = noInvoice ? (transaction.employeeId ?? null) : null;
+  const employees = direction === BANK_DIRECTION.DEBIT ? await store.listEmployees() : [];
   return {
-    transaction: { id, name, bookingDate, direction, amount, counterpartyName, remittanceInformation, matchStatus, expenseCategory },
+    transaction: {
+      id,
+      name,
+      bookingDate,
+      direction,
+      amount,
+      counterpartyName,
+      remittanceInformation,
+      matchStatus,
+      expenseCategory,
+      employeeId,
+    },
     candidates,
+    employees,
+    suggestedEmployeeId: employeeId ?? findEmployeeId(employees, counterpartyName),
   };
 };
 
 export type ManualAllocation = { invoiceId: string; amountMicros: number };
 
+// wydatek bez faktury zamiast faktur; pracownik wymagany przy wynagrodzeniu
+export type ManualExpense = { category: string; employeeId: string | null };
+
 export const saveManualAllocation = async (
   store: BankStore,
   transactionId: string,
   items: ManualAllocation[],
-  expenseCategory: string | null = null,
+  expense: ManualExpense | null = null,
 ) => {
   const transaction = await loadTransaction(store, transactionId);
-  if (expenseCategory !== null) return saveExpense(store, transaction, items, expenseCategory);
+  if (expense) return saveExpense(store, transaction, items, expense);
   if (items.some((i) => !Number.isFinite(i.amountMicros))) throw new AllocationError('Niepoprawna kwota.');
   // kwota ujemna = korekta in minus pomniejszająca przelew zbiorczy
   const wanted = items.filter((i) => i.amountMicros !== 0);
@@ -180,6 +203,7 @@ export const saveManualAllocation = async (
   const left = transaction.amount.amountMicros - total;
   await store.updateTransaction(transactionId, {
     expenseCategory: null,
+    employeeId: null,
     matchStatus: wanted.length ? MATCH_STATUS.MANUAL : MATCH_STATUS.UNMATCHED,
     matchNote: wanted.length
       ? `Rozliczona ręcznie: ${wanted.length} ${wanted.length === 1 ? 'faktura' : 'faktury'}` +
@@ -192,8 +216,17 @@ export const saveManualAllocation = async (
   return { allocations: wanted.length, invoicesUpdated: affected.size };
 };
 
-const saveExpense = async (store: BankStore, transaction: StoredTransaction, items: ManualAllocation[], category: string) => {
+const saveExpense = async (
+  store: BankStore,
+  transaction: StoredTransaction,
+  items: ManualAllocation[],
+  { category, employeeId }: ManualExpense,
+) => {
   if (!Object.values(EXPENSE_CATEGORY).some((c) => c === category)) throw new AllocationError('Nieznany rodzaj wydatku.');
+  const salary = category === EXPENSE_CATEGORY.SALARY;
+  if (salary && !employeeId) throw new AllocationError('Wybierz pracownika, którego dotyczy wynagrodzenie.');
+  const employee = salary ? (await store.listEmployees()).find((e) => e.id === employeeId) : null;
+  if (salary && !employee) throw new AllocationError('Nie znaleziono pracownika.');
   if (transaction.direction !== BANK_DIRECTION.DEBIT) throw new AllocationError('Rodzaj wydatku dotyczy tylko wydatków.');
   if (items.some((i) => i.amountMicros !== 0)) {
     throw new AllocationError('Wydatek bez faktury nie może jednocześnie opłacać faktur.');
@@ -202,10 +235,11 @@ const saveExpense = async (store: BankStore, transaction: StoredTransaction, ite
   await store.deleteAllocations(previous.map((a) => a.id));
   await store.updateTransaction(transaction.id, {
     matchStatus: MATCH_STATUS.NO_INVOICE,
-    matchNote: `Bez faktury: ${expenseLabel(category)} (ręcznie)`,
+    matchNote: `Bez faktury: ${expenseLabel(category)}${employee?.name ? ` – ${employee.name}` : ''} (ręcznie)`,
     expenseCategory: category,
+    employeeId: employee?.id ?? null,
   });
   const affected = new Set(previous.map((a) => a.invoiceId));
   for (const invoiceId of affected) await recomputeInvoicePayment(store, invoiceId);
-  return { allocations: 0, expenseCategory: category, invoicesUpdated: affected.size };
+  return { allocations: 0, expenseCategory: category, employeeId: employee?.id ?? null, invoicesUpdated: affected.size };
 };

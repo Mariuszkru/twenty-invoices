@@ -5,6 +5,7 @@ export const ID = {
   lineObject: '90705ba0-514f-426b-a964-01afeeb53e14',
   bankTxObject: '4c929426-aac4-4452-99f5-6ef0370db918',
   allocObject: '754d8bad-39ad-45cd-bc66-69d61badbfc1',
+  employeeObject: '37b300c7-0729-4b0d-aeff-2d086c259284',
 
   invKsefNumber: 'ad20e42e-5477-4d2d-85de-1e5cf1f0996b',
   invDirection: '1d290559-c203-4f98-a53d-688832e266b6',
@@ -73,6 +74,10 @@ export const ID = {
   btxMatchNote: 'a9f9da1c-9d01-4029-acea-3cd600cc95bc',
   btxAllocations: '80f6339e-7fce-4b7e-a7a4-5bb346bdcb8f',
   btxExpenseCategory: '832db0cf-8371-441c-99ac-bf50e4f6faac',
+  btxEmployee: 'f6b480fa-75fa-495f-afc7-fbc570c444a4',
+
+  empName: 'c158123b-5073-4b62-9ee1-efb7412c8944',
+  empSalaryTransactions: '106f3cad-10e6-4682-88d4-0f955790fd92',
 
   allocTransaction: 'fbf73e79-6348-4a9d-af8c-1f84df620e37',
   allocInvoice: '7002237e-617d-4ebe-b194-6261ff85483f',
@@ -136,6 +141,7 @@ export const ID = {
   viewToPay: '90c386af-e509-42af-a471-0ff2a1734d76',
   viewBankTx: 'b04b4fb3-3239-430f-a3be-1c24c6daf195',
   viewBankUnmatched: '711c92e4-474c-4f5b-9612-749b7b3d6808',
+  viewEmployees: 'c75a6553-9300-45de-80c3-3234f0e94479',
 
   navFolder: '5365d09a-4cec-43cf-afc9-9d51d801d21c',
   navSales: '63841482-5913-45ee-86c1-ed6f235349e2',
@@ -145,4 +151,5 @@ export const ID = {
   navToPay: '55c72298-0d46-4be4-99e4-4cfffa10ac65',
   navBankTx: 'c2895e59-9791-45b9-b147-03d39fd512a1',
   navBankUnmatched: '7bd56451-29b9-4499-aa07-4d118093e63e',
+  navEmployees: '314e2292-2e33-4c9c-8b06-d971e6d29a0d',
 } as const;

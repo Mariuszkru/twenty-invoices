@@ -2,7 +2,7 @@ import { CoreApiClient } from 'twenty-client-sdk/core';
 
 import { MATCH_STATUS, PAYMENT_STATUS } from 'src/constants/options';
 import type { OpenInvoice } from 'src/lib/bank/match';
-import type { BankStore, StoredAllocation, StoredTransaction } from 'src/lib/bank/store';
+import type { BankStore, Employee, StoredAllocation, StoredTransaction } from 'src/lib/bank/store';
 import type { Currency } from 'src/lib/sync/mapping';
 import { chunks, type Edges, type LooseClient } from 'src/lib/sync/twenty-store';
 
@@ -23,6 +23,7 @@ const TRANSACTION_SELECTION = {
   matchStatus: true,
   matchNote: true,
   expenseCategory: true,
+  employeeId: true,
 } as const;
 
 const OPEN_INVOICE_SELECTION = {
@@ -249,5 +250,8 @@ export const createTwentyBankStore = (): BankStore => {
         },
       });
     },
+
+    listEmployees: async () =>
+      queryAll<Employee>('employees', { orderBy: [{ name: 'AscNullsLast' }] }, { id: true, name: true }),
   };
 };
