@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.14.4
+
+- The "Przypnij pozycje faktur" panel search also matches the invoice line name (e.g. "kabel" finds every line with that word), not only the invoice number, KSeF number or counterparty
+
 ## 0.14.3
 
 - The "Przypnij pozycje faktur" panel no longer lets you change whether a line is revenue or cost. The type always follows the invoice direction (sale → revenue, purchase → cost) and the server ignores a type sent with the request. Lines without a direction cannot be pinned

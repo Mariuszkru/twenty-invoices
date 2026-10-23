@@ -22,7 +22,7 @@ export const createMemoryProjectStore = (lines: CandidateLine[], projects: Store
     searchLines: async (query) =>
       lines.filter((l) =>
         query
-          ? `${l.invoiceName ?? ''} ${l.counterpartyName ?? ''}`.toLowerCase().includes(query.toLowerCase())
+          ? `${l.invoiceName ?? ''} ${l.counterpartyName ?? ''} ${l.name ?? ''}`.toLowerCase().includes(query.toLowerCase())
           : lineStatus.get(l.id) !== 'ASSIGNED',
       ),
     listEntriesForLines: async (lineIds) => entries.filter((e) => e.invoiceLineId && lineIds.includes(e.invoiceLineId)),

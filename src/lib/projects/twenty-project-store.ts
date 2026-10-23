@@ -161,7 +161,13 @@ export const createTwentyProjectStore = (): ProjectStore => {
         },
       });
       const invoiceIds = (result.ksefInvoices as Edges<{ id: string }>).edges.map((e) => e.node.id);
-      return invoiceIds.length ? queryLines({ invoiceId: { in: invoiceIds } }, PAGE) : [];
+      // pozycje pasujących faktur oraz pozycje, których nazwa pasuje do frazy
+      const [byInvoice, byName] = await Promise.all([
+        invoiceIds.length ? queryLines({ invoiceId: { in: invoiceIds } }, PAGE) : [],
+        queryLines({ name: { ilike: pattern } }, PAGE, [{ issueDate: 'DescNullsLast' }]),
+      ]);
+      const ids = new Set(byInvoice.map((l) => l.id));
+      return [...byInvoice, ...byName.filter((l) => !ids.has(l.id))];
     },
 
     listEntriesForLines: async (lineIds) => {

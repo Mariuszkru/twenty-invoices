@@ -49,7 +49,7 @@ const formatDate = (iso: string | null) => (iso ? iso.slice(0, 10).split('-').re
 
 const statusLabel = (status: string | null) => PROJECT_STATUS_OPTIONS.find((o) => o.value === status)?.label ?? '';
 
-// Panel boczny: wybór projektu i wielu pozycji faktur naraz. Wyszukiwanie po numerze faktury albo kontrahencie;
+// Panel boczny: wybór projektu i wielu pozycji faktur naraz. Wyszukiwanie po numerze faktury, kontrahencie albo nazwie pozycji;
 // bez frazy lista pokazuje ostatnie pozycje jeszcze nie w pełni przypisane.
 const ProjectPin = () => {
   const theme = useTheme();
@@ -196,7 +196,7 @@ const ProjectPin = () => {
 
       <input
         value={query}
-        placeholder="Szukaj po numerze faktury albo kontrahencie (np. FV 34, WAMAR)"
+        placeholder="Szukaj po numerze faktury, kontrahencie albo pozycji (np. FV 34, WAMAR, kabel)"
         onChange={(e) => setQuery(e.target.value)}
         style={full}
       />
@@ -204,7 +204,7 @@ const ProjectPin = () => {
         {query.trim()
           ? loading
             ? 'Szukam…'
-            : `Pozycje faktur pasujących do „${query.trim()}”.`
+            : `Pozycje pasujące do „${query.trim()}” (faktura, kontrahent albo nazwa pozycji).`
           : 'Ostatnie pozycje jeszcze nie w pełni przypisane do projektów.'}
       </div>
 

@@ -4,7 +4,7 @@ import { completeEntry, refreshLine, refreshProject } from 'src/lib/projects/rec
 import type { ProjectOption, ProjectStore } from 'src/lib/projects/store';
 
 // Panel "Przypnij pozycje faktur": wybór projektu i wielu pozycji faktur naraz, z wyszukiwaniem po numerze
-// faktury albo kontrahencie. Zapis aplikacji nie uruchamia triggera przypisań, więc przeliczamy tutaj.
+// faktury, kontrahencie albo nazwie pozycji. Zapis aplikacji nie uruchamia triggera przypisań, więc przeliczamy tutaj.
 
 export class PinError extends Error {}
 

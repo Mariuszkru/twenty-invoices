@@ -13,6 +13,7 @@ const setup = () =>
         id: 'z1',
         invoiceName: 'FS-2475/26/OSTR',
         counterpartyName: 'WAMAR',
+        name: 'Kabel HDMI 2 m',
         direction: 'PURCHASE',
         netAmount: money(43),
         marginEffectPln: money(-43),
@@ -33,6 +34,12 @@ describe('panel Przypnij pozycje faktur', () => {
       expect.objectContaining({ id: 'z1', remainingMicros: money(43).amountMicros, defaultType: ENTRY_TYPE.COST, projectNames: [] }),
     ]);
     expect(bySupplier.projects.map((p) => p.name)).toEqual(['Serwis']);
+  });
+
+  it('wyszukuje po nazwie pozycji', async () => {
+    const memory = setup();
+    const byName = await pinContext(memory.store, 'kabel hdmi');
+    expect(byName.candidates.map((c) => c.id)).toEqual(['z1']);
   });
 
   it('przypina kilka pozycji naraz i przelicza marżę projektu', async () => {
