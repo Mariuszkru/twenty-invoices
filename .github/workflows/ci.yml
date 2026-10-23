@@ -39,7 +39,7 @@ jobs:
           cache: yarn
 
       - name: Install Twenty CLI
-        run: npm install -g twenty@2.48.0
+        run: npm install -g twenty@2.50.0
 
       - name: Install dependencies
         run: yarn install --immutable

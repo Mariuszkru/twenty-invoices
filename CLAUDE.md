@@ -2,7 +2,7 @@
 
 ## What this is
 
-`ksef-invoices` ("Faktury KSeF") is a Twenty app (twenty-sdk 2.48.0, scaffolded with `twenty app init`). It imports sales and purchase invoices from KSeF API 2.0, with one record per invoice line, so lines can later be allocated to delivered services for real margin. User-facing strings and code comments are in Polish; keep that convention.
+`ksef-invoices` ("Faktury KSeF") is a Twenty app (twenty-sdk 2.50.0, scaffolded with `twenty app init`). It imports sales and purchase invoices from KSeF API 2.0, with one record per invoice line, so lines can later be allocated to delivered services for real margin. User-facing strings and code comments are in Polish; keep that convention.
 
 ## Commands
 

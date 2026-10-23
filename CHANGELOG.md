@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.8.3
+
+- Requires a Twenty server 2.50.0 or newer (`engines.twenty`): file upload and app deploy use the direct-to-storage upload, which older servers lack. CI installs the Twenty CLI 2.50.0
+
 ## 0.8.2
 
 - Panels (e.g. "Rozlicz przelew") showed buttons as plain text on Twenty 2.50: the app bundled twenty-ui 2.48, whose hashed CSS class names no longer match the stylesheet served by the host. twenty-sdk, twenty-client-sdk and twenty-ui are now 2.50.0
