@@ -240,7 +240,7 @@ const BankAllocate = () => {
             wordBreak: 'break-word',
           }}
         >
-          Propozycja dopasowania: {context.proposal.note}. Sprawdź i zatwierdź albo zmień wybór – nic nie zapisze się samo.
+          Propozycja dopasowania: {context.proposal.note}.
         </div>
       )}
 
