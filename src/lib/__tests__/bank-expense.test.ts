@@ -194,3 +194,59 @@ describe('wydatki bez faktury', () => {
     await expect(saveManualAllocation(memory.store, ids.get('acc:in')!, [], { category: 'ZUS', employeeId: null })).rejects.toThrow('tylko wydatków');
   });
 });
+
+describe('propozycja w panelu Rozlicz przelew', () => {
+  const tx = (overrides: Record<string, unknown>) => ({
+    externalId: 'acc:p',
+    name: 'Przelew',
+    bookingDate: '2026-10-09',
+    valueDate: '2026-10-09',
+    direction: 'DEBIT' as const,
+    amount: PLN(2275),
+    counterpartyName: 'MARIUSZ KRUKOWSKI',
+    counterpartyAccount: 'PL68102038020000190201362664',
+    remittanceInformation: 'WYNAGRODZENIE CZŁONKA ZARZADU - WRZESIEŃ 2026',
+    accountIban: null,
+    matchStatus: 'UNMATCHED',
+    matchNote: null,
+    ...overrides,
+  });
+
+  it('wynagrodzenie: proponuje rodzaj wydatku i pracownika, niczego nie zapisuje', async () => {
+    const memory = createMemoryBankStore([], [{ id: 'emp-mk', name: 'Mariusz Krukowski' }]);
+    const id = (await memory.store.createTransactions([tx({})])).get('acc:p')!;
+
+    const context = await allocationContext(memory.store, id);
+
+    expect(context.proposal).toEqual({
+      kind: 'expense',
+      category: 'SALARY',
+      employeeId: 'emp-mk',
+      note: 'Wynagrodzenia – Mariusz Krukowski (wynagrodzenie w tytule)',
+    });
+    expect(memory.transactions[0]).toMatchObject({ matchStatus: 'UNMATCHED' });
+    expect(memory.transactions[0].expenseCategory).toBeUndefined();
+  });
+
+  it('faktura w tytule: proponuje rozliczenie z fakturą', async () => {
+    const memory = createMemoryBankStore([
+      openInvoice({ id: 'fz', name: 'FZ/7/2026', direction: 'PURCHASE', grossAmount: PLN(500) }),
+    ]);
+    const id = (await memory.store.createTransactions([tx({ amount: PLN(500), remittanceInformation: 'Zapłata FZ/7/2026' })])).get('acc:p')!;
+
+    const context = await allocationContext(memory.store, id);
+
+    expect(context.proposal).toMatchObject({ kind: 'invoices', allocations: [{ invoiceId: 'fz', amountMicros: 500_000_000 }] });
+    expect(memory.allocations).toEqual([]);
+  });
+
+  it('bez propozycji, gdy transakcja jest już rozliczona albo nic nie pasuje', async () => {
+    const memory = createMemoryBankStore([]);
+    const ids = await memory.store.createTransactions([
+      tx({ externalId: 'acc:done', matchStatus: 'NO_INVOICE', expenseCategory: 'ZUS' }),
+      tx({ externalId: 'acc:none', counterpartyName: 'Sklep', remittanceInformation: 'Zakupy' }),
+    ]);
+    expect((await allocationContext(memory.store, ids.get('acc:done')!)).proposal).toBeNull();
+    expect((await allocationContext(memory.store, ids.get('acc:none')!)).proposal).toBeNull();
+  });
+});

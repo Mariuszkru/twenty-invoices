@@ -1,12 +1,20 @@
 import { ALLOCATION_ORIGIN, BANK_DIRECTION, DIRECTION, EXPENSE_CATEGORY, MATCH_STATUS } from 'src/constants/options';
-import { expenseLabel, findEmployeeId } from 'src/lib/bank/expense-category';
-import { AMOUNT_TOLERANCE_MICROS, normalizeAccount, remainingMicros, type OpenInvoice } from 'src/lib/bank/match';
+import { classifyExpense, expenseLabel, findEmployeeId } from 'src/lib/bank/expense-category';
+import {
+  AMOUNT_TOLERANCE_MICROS,
+  matchTransaction,
+  normalizeAccount,
+  remainingMicros,
+  type OpenInvoice,
+} from 'src/lib/bank/match';
 import { allocationName, recomputeInvoicePayment } from 'src/lib/bank/payment';
 import type { BankStore, Employee, StoredTransaction } from 'src/lib/bank/store';
 
 // Ręczne rozliczenie transakcji w panelu "Rozlicz przelew": lista faktur do wyboru i zapis rozliczeń.
 // Zapis zastępuje wszystkie rozliczenia transakcji i przelicza płatność faktur, których dotyczył przed i po zmianie.
 // Wydatek bez faktury (ZUS, podatki, wynagrodzenia) zapisuje rodzaj wydatku zamiast rozliczeń.
+// Nierozliczona transakcja dostaje propozycję z tego samego dopasowania co przebieg dzienny – panel ją zaznacza,
+// ale zapisuje dopiero osoba.
 
 export class AllocationError extends Error {
   constructor(message: string) {
@@ -50,7 +58,13 @@ export type AllocationContext = {
   // lista do wyboru przy wynagrodzeniu i pracownik podpowiedziany po odbiorcy przelewu
   employees: Employee[];
   suggestedEmployeeId: string | null;
+  // automatyczna propozycja rozliczenia (bez zapisu); null, gdy transakcja jest już rozliczona albo nic nie pasuje
+  proposal: AllocationProposal | null;
 };
+
+export type AllocationProposal =
+  | { kind: 'invoices'; allocations: ManualAllocation[]; note: string }
+  | { kind: 'expense'; category: string; employeeId: string | null; note: string };
 
 const MAX_CANDIDATES = 100;
 // zapłacone faktury pokazywane w panelu (np. opłacone z góry, do których trzeba przypiąć przelew)
@@ -118,14 +132,18 @@ export const allocationContext = async (store: BankStore, transactionId: string)
         Number(a.alreadyPaid) - Number(b.alreadyPaid) ||
         Number(b.sameCounterparty) - Number(a.sameCounterparty) ||
         (b.issueDate ?? '').localeCompare(a.issueDate ?? ''),
-    )
-    .slice(0, MAX_CANDIDATES);
+    );
 
   const { id, name, bookingDate, direction, amount, counterpartyName, remittanceInformation, matchStatus } = transaction;
   const noInvoice = matchStatus === MATCH_STATUS.NO_INVOICE;
   const expenseCategory = noInvoice ? (transaction.expenseCategory ?? null) : null;
   const employeeId = noInvoice ? (transaction.employeeId ?? null) : null;
   const employees = direction === BANK_DIRECTION.DEBIT ? await store.listEmployees() : [];
+  const proposal = current.length || noInvoice ? null : propose(transaction, open, paid, employees);
+  // proponowana faktura musi być na liście, nawet poza pierwszą setką
+  const proposedIds = new Set(proposal?.kind === 'invoices' ? proposal.allocations.map((a) => a.invoiceId) : []);
+  const shown = candidates.slice(0, MAX_CANDIDATES);
+  for (const c of candidates.slice(MAX_CANDIDATES)) if (proposedIds.has(c.id)) shown.push(c);
   return {
     transaction: {
       id,
@@ -139,9 +157,42 @@ export const allocationContext = async (store: BankStore, transactionId: string)
       expenseCategory,
       employeeId,
     },
-    candidates,
+    candidates: shown,
     employees,
     suggestedEmployeeId: employeeId ?? findEmployeeId(employees, counterpartyName),
+    proposal,
+  };
+};
+
+// Jak przebieg dzienny: najpierw faktury otwarte, potem już zapłacone, na końcu ZUS, podatek albo wynagrodzenie.
+const propose = (
+  transaction: StoredTransaction,
+  open: OpenInvoice[],
+  paid: OpenInvoice[],
+  employees: Employee[],
+): AllocationProposal | null => {
+  for (const [invoices, suffix] of [
+    [open, ''],
+    [paid, '; faktura jest już oznaczona jako zapłacona'],
+  ] as const) {
+    const match = matchTransaction(transaction, invoices);
+    if (match.allocations.length) {
+      return {
+        kind: 'invoices',
+        allocations: match.allocations.map(({ invoiceId, amountMicros }) => ({ invoiceId, amountMicros })),
+        note: match.note + suffix,
+      };
+    }
+  }
+  const expense = classifyExpense(transaction);
+  if (!expense) return null;
+  const employeeId = expense.category === EXPENSE_CATEGORY.SALARY ? findEmployeeId(employees, transaction.counterpartyName) : null;
+  const employee = employees.find((e) => e.id === employeeId);
+  return {
+    kind: 'expense',
+    category: expense.category,
+    employeeId,
+    note: `${expenseLabel(expense.category)}${employee?.name ? ` – ${employee.name}` : ''} (${expense.note})`,
   };
 };
 

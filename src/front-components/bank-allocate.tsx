@@ -39,6 +39,11 @@ type Context = {
   candidates?: Candidate[];
   employees?: { id: string; name: string | null }[];
   suggestedEmployeeId?: string | null;
+  // propozycja z automatycznego dopasowania – tylko zaznaczenie, zapisuje osoba
+  proposal?:
+    | { kind: 'invoices'; allocations: { invoiceId: string; amountMicros: number }[]; note: string }
+    | { kind: 'expense'; category: string; employeeId: string | null; note: string }
+    | null;
 };
 
 type Tab = 'invoices' | 'other';
@@ -87,13 +92,17 @@ const BankAllocate = () => {
           return;
         }
         setContext(result);
-        setCategory(result.transaction?.expenseCategory ?? null);
-        setEmployeeId(result.suggestedEmployeeId ?? null);
-        setTab(result.transaction?.expenseCategory ? 'other' : 'invoices');
+        const proposal = result.proposal ?? null;
+        const proposedExpense = proposal?.kind === 'expense' ? proposal : null;
+        setCategory(result.transaction?.expenseCategory ?? proposedExpense?.category ?? null);
+        setEmployeeId(proposedExpense?.employeeId ?? result.suggestedEmployeeId ?? null);
+        setTab(result.transaction?.expenseCategory || proposedExpense ? 'other' : 'invoices');
         setSelected(
-          Object.fromEntries(
-            (result.candidates ?? []).filter((c) => c.allocatedMicros !== 0).map((c) => [c.id, toInput(c.allocatedMicros)]),
-          ),
+          proposal?.kind === 'invoices'
+            ? Object.fromEntries(proposal.allocations.map((a) => [a.invoiceId, toInput(a.amountMicros)]))
+            : Object.fromEntries(
+                (result.candidates ?? []).filter((c) => c.allocatedMicros !== 0).map((c) => [c.id, toInput(c.allocatedMicros)]),
+              ),
         );
       })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
@@ -218,6 +227,20 @@ const BankAllocate = () => {
               {money(transaction.amount.amountMicros, currency)}
             </span>
           </div>
+        </div>
+      )}
+
+      {context?.proposal && (
+        <div
+          style={{
+            ...box,
+            padding: theme.spacing[2],
+            borderColor: theme.color.blue,
+            color: theme.font.color.secondary,
+            wordBreak: 'break-word',
+          }}
+        >
+          Propozycja dopasowania: {context.proposal.note}. Sprawdź i zatwierdź albo zmień wybór – nic nie zapisze się samo.
         </div>
       )}
 
