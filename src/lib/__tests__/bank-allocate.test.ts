@@ -102,6 +102,42 @@ describe('panel Rozlicz przelew', () => {
     expect(memory.invoices[memory.invoices.length - 1]).toMatchObject({ paymentStatus: 'PAID', paidAt: '2026-10-10', paidAmount: PLN(1500) });
   });
 
+  it('przelew zbiorczy z korektą in minus: korekta jest kandydatem i dostaje ujemne rozliczenie', async () => {
+    const { memory, transactionId } = await setup();
+    memory.invoices.push(
+      openInvoice({ id: 'k', name: 'KOR/1', direction: 'PURCHASE', grossAmount: PLN(-70), bankAccount: 'PL27114020040000300201355387', issueDate: '2026-10-08' }),
+    );
+    memory.transactions[0].amount = PLN(1430);
+    const context = await allocationContext(memory.store, transactionId);
+    expect(context.candidates.find((c) => c.id === 'k')).toMatchObject({ remainingMicros: -70_000_000 });
+
+    await saveManualAllocation(memory.store, transactionId, [
+      { invoiceId: 'a', amountMicros: 1_000_000_000 },
+      { invoiceId: 'b', amountMicros: 500_000_000 },
+      { invoiceId: 'k', amountMicros: -70_000_000 },
+    ]);
+    expect(memory.transactions[0].matchNote).toBe('Rozliczona ręcznie: 3 faktury');
+    expect(memory.invoices.find((i) => i.id === 'k')).toMatchObject({ paymentStatus: 'PAID', paidAmount: PLN(-70) });
+    expect(memory.invoices.slice(0, 2).map((i) => i.paymentStatus)).toEqual(['PAID', 'PAID']);
+  });
+
+  it('odrzuca dodatnią kwotę dla korekty in minus i ujemną sumę', async () => {
+    const { memory, transactionId } = await setup();
+    memory.invoices.push(openInvoice({ id: 'k', name: 'KOR/1', direction: 'PURCHASE', grossAmount: PLN(-70) }));
+    await expect(saveManualAllocation(memory.store, transactionId, [{ invoiceId: 'k', amountMicros: 70_000_000 }])).rejects.toThrow(
+      'wpisz kwotę z minusem',
+    );
+    await expect(saveManualAllocation(memory.store, transactionId, [{ invoiceId: 'k', amountMicros: -70_000_000 }])).rejects.toThrow(
+      'nie może być ujemna',
+    );
+    await expect(saveManualAllocation(memory.store, transactionId, [
+      { invoiceId: 'a', amountMicros: -5_000_000 },
+      { invoiceId: 'b', amountMicros: 500_000_000 },
+    ])).rejects.toThrow(
+      'wymaga kwoty dodatniej',
+    );
+  });
+
   it('odrzuca sumę większą niż transakcja i fakturę w złym kierunku', async () => {
     const { memory, transactionId } = await setup();
     await expect(

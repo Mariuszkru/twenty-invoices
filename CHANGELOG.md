@@ -2,6 +2,11 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.8.1
+
+- The "Rozlicz przelew" panel lists credit notes with a negative gross amount, so a collective transfer can be split onto invoices and a correction (e.g. 1430 = 1000 + 500 − 70). A correction takes a negative allocation, suggested in full when selected; the total must stay between 0 and the transaction amount
+- Payment status of a credit note is computed in the sign of its gross amount: a −70 correction allocated −70 is Paid
+
 ## 0.8.0
 
 - Statement fetch times are set in the new `BANK_SYNC_TIMES` app variable (Polish time, comma-separated, at most 3; default `12:00,15:40,18:00`, 30 minutes after the PKO BP incoming Elixir sessions). The `bank-sync` cron wakes every 10 minutes and calls the bank only when a configured time has passed and was not handled yet; missed times collapse into one fetch and earlier days are not replayed

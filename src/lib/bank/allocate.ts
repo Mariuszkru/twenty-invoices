@@ -53,7 +53,9 @@ const fitsTransaction = (transaction: StoredTransaction, invoice: OpenInvoice) =
   invoice.direction === (transaction.direction === BANK_DIRECTION.CREDIT ? DIRECTION.SALE : DIRECTION.PURCHASE) &&
   invoice.grossAmount?.currencyCode === transaction.amount.currencyCode;
 
-const normalizeName = (value: string | null) => (value ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
+const grossSign = (invoice: OpenInvoice) => ((invoice.grossAmount?.amountMicros ?? 0) < 0 ? -1 : 1);
+
+const normalizeName =(value: string | null) => (value ?? '').toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 10);
 
 export const allocationContext = async (store: BankStore, transactionId: string): Promise<AllocationContext> => {
   const transaction = await loadTransaction(store, transactionId);
@@ -71,13 +73,16 @@ export const allocationContext = async (store: BankStore, transactionId: string)
   const txName = normalizeName(transaction.counterpartyName);
 
   const candidates = [...listed, ...assigned]
-    .filter((i) => allocatedByInvoice.has(i.id) || (fitsTransaction(transaction, i) && (i.grossAmount?.amountMicros ?? 0) > 0))
+    // korekty in minus (ujemne brutto) też są kandydatami: pomniejszają przelew zbiorczy
+    .filter((i) => allocatedByInvoice.has(i.id) || (fitsTransaction(transaction, i) && (i.grossAmount?.amountMicros ?? 0) !== 0))
     .map((i): AllocationCandidate => {
       const allocated = allocatedByInvoice.get(i.id) ?? 0;
       const sameCounterparty =
         (txAccount !== null && normalizeAccount(i.bankAccount) === txAccount) ||
         (txName.length >= 4 && normalizeName(i.counterpartyName) === txName);
-      const remaining = Math.max(0, remainingMicros(i) + allocated);
+      // pozostała kwota nie przechodzi przez zero: dla korekty in minus jest ujemna albo 0
+      const unpaid = remainingMicros(i) + allocated;
+      const remaining = grossSign(i) < 0 ? Math.min(0, unpaid) : Math.max(0, unpaid);
       return {
         id: i.id,
         name: i.name,
@@ -94,7 +99,7 @@ export const allocationContext = async (store: BankStore, transactionId: string)
     })
     .sort(
       (a, b) =>
-        Number(b.allocatedMicros > 0) - Number(a.allocatedMicros > 0) ||
+        Number(b.allocatedMicros !== 0) - Number(a.allocatedMicros !== 0) ||
         Number(b.sameAmount) - Number(a.sameAmount) ||
         Number(a.alreadyPaid) - Number(b.alreadyPaid) ||
         Number(b.sameCounterparty) - Number(a.sameCounterparty) ||
@@ -113,14 +118,18 @@ export type ManualAllocation = { invoiceId: string; amountMicros: number };
 
 export const saveManualAllocation = async (store: BankStore, transactionId: string, items: ManualAllocation[]) => {
   const transaction = await loadTransaction(store, transactionId);
-  const wanted = items.filter((i) => i.amountMicros > 0);
-  if (wanted.some((i) => !Number.isFinite(i.amountMicros))) throw new AllocationError('Niepoprawna kwota.');
+  if (items.some((i) => !Number.isFinite(i.amountMicros))) throw new AllocationError('Niepoprawna kwota.');
+  // kwota ujemna = korekta in minus pomniejszająca przelew zbiorczy
+  const wanted = items.filter((i) => i.amountMicros !== 0);
   if (new Set(wanted.map((i) => i.invoiceId)).size !== wanted.length) {
     throw new AllocationError('Każda faktura może wystąpić tylko raz.');
   }
   const total = wanted.reduce((sum, i) => sum + i.amountMicros, 0);
   if (total > transaction.amount.amountMicros + AMOUNT_TOLERANCE_MICROS) {
     throw new AllocationError('Suma rozliczeń przekracza kwotę transakcji.');
+  }
+  if (wanted.length && total < 0) {
+    throw new AllocationError('Suma rozliczeń nie może być ujemna – korekty muszą pomniejszać faktury z tego przelewu.');
   }
 
   const invoices = await store.getInvoices(wanted.map((i) => i.invoiceId));
@@ -129,6 +138,13 @@ export const saveManualAllocation = async (store: BankStore, transactionId: stri
     if (!invoice) throw new AllocationError('Nie znaleziono faktury.');
     if (!fitsTransaction(transaction, invoice)) {
       throw new AllocationError(`Faktura ${invoice.name ?? ''} nie pasuje kierunkiem albo walutą do transakcji.`);
+    }
+    if (Math.sign(item.amountMicros) !== grossSign(invoice)) {
+      throw new AllocationError(
+        grossSign(invoice) < 0
+          ? `Korekta ${invoice.name ?? ''} ma ujemne brutto – wpisz kwotę z minusem.`
+          : `Faktura ${invoice.name ?? ''} wymaga kwoty dodatniej.`,
+      );
     }
   }
 

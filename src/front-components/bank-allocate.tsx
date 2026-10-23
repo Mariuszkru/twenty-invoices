@@ -69,7 +69,7 @@ const BankAllocate = () => {
         setContext(result);
         setSelected(
           Object.fromEntries(
-            (result.candidates ?? []).filter((c) => c.allocatedMicros > 0).map((c) => [c.id, toInput(c.allocatedMicros)]),
+            (result.candidates ?? []).filter((c) => c.allocatedMicros !== 0).map((c) => [c.id, toInput(c.allocatedMicros)]),
           ),
         );
       })
@@ -83,7 +83,9 @@ const BankAllocate = () => {
 
   // faktury już rozliczone (status Zapłacona albo nic do zapłaty) chowamy, dopóki ich nie szukasz albo nie włączysz;
   // zapłaconą z kwotą równą transakcji pokazujemy zawsze – to zwykle faktura opłacona z góry tym przelewem
-  const isSettled = (c: Candidate) => !c.sameAmount && (c.alreadyPaid || c.remainingMicros <= 0);
+  // korekta in minus ma ujemną pozostałą kwotę – do rozliczenia, dopóki nie spadnie do zera
+  const isSettled = (c: Candidate) =>
+    !c.sameAmount && (c.alreadyPaid || (c.grossMicros < 0 ? c.remainingMicros >= 0 : c.remainingMicros <= 0));
   const settledCount = (context?.candidates ?? []).filter((c) => isSettled(c) && selected[c.id] === undefined).length;
 
   const visible = useMemo(() => {
@@ -101,8 +103,10 @@ const BankAllocate = () => {
       if (next[candidate.id] !== undefined) {
         delete next[candidate.id];
       } else {
-        // podpowiedź: pozostała kwota faktury, ale nie więcej niż zostało z przelewu
-        next[candidate.id] = toInput(Math.max(0, Math.min(candidate.remainingMicros, leftMicros)));
+        // podpowiedź: pozostała kwota faktury, ale nie więcej niż zostało z przelewu; korekta in minus w całości
+        next[candidate.id] = toInput(
+          candidate.grossMicros < 0 ? candidate.remainingMicros : Math.max(0, Math.min(candidate.remainingMicros, leftMicros)),
+        );
       }
       return next;
     });

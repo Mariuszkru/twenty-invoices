@@ -23,11 +23,13 @@ export const computePayment = (
   const currency = gross?.currencyCode ?? transactions[0]?.amount?.currencyCode ?? 'PLN';
   const counted = transactions.filter((t) => t.amount && t.amount.currencyCode === currency);
   const paid = counted.reduce((sum, t) => sum + (t.amount?.amountMicros ?? 0), 0);
-  if (paid <= 0) return { paymentStatus: PAYMENT_STATUS.UNPAID, paidAmount: null, paidAt: null };
+  // korekta in minus ma ujemne brutto i ujemne rozliczenia (pomniejsza przelew zbiorczy) – liczymy w znaku brutto
+  const sign = gross !== null && gross.amountMicros < 0 ? -1 : 1;
+  if (paid * sign <= 0) return { paymentStatus: PAYMENT_STATUS.UNPAID, paidAmount: null, paidAt: null };
 
   const dates = counted.map((t) => t.bookingDate).filter((d): d is string => !!d).sort();
   const paidAt = dates[dates.length - 1] ?? null;
-  const isPaid = gross !== null && paid >= gross.amountMicros - AMOUNT_TOLERANCE_MICROS;
+  const isPaid = gross !== null && paid * sign >= gross.amountMicros * sign - AMOUNT_TOLERANCE_MICROS;
   return {
     paymentStatus: isPaid ? PAYMENT_STATUS.PAID : PAYMENT_STATUS.PARTIAL,
     paidAmount: { amountMicros: paid, currencyCode: currency },
