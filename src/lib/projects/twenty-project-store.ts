@@ -69,9 +69,27 @@ const RECENT_LINES = 50;
 
 type Connection<T> = Edges<T> & { pageInfo: { endCursor: string | null; hasNextPage: boolean } };
 
-export const createTwentyProjectStore = (): ProjectStore => {
+// actingMemberId: członek workspace'u, który użył panelu – trafia do "Created by" nowych przypisań
+export const createTwentyProjectStore = (actingMemberId: string | null = null): ProjectStore => {
   // przeliczenia zapisują pola tylko dla aplikacji (writability APPLICATION) – zawsze uprawnienia aplikacji
   const client = new CoreApiClient({ runAs: 'application' }) as LooseClient;
+
+  // token aplikacji podpisałby rekord nazwą aplikacji; serwer zostawia createdBy z wypełnionym name
+  let createdBy: Promise<Record<string, unknown> | undefined> | undefined;
+  const actingCreatedBy = () =>
+    (createdBy ??= (async () => {
+      if (!actingMemberId) return undefined;
+      const result = await client.query({
+        workspaceMembers: {
+          __args: { filter: { id: { eq: actingMemberId } }, first: 1 },
+          edges: { node: { name: { firstName: true, lastName: true } } },
+        },
+      });
+      const member = (result.workspaceMembers as Edges<{ name: { firstName: string | null; lastName: string | null } | null }>)
+        .edges[0]?.node;
+      const name = [member?.name?.firstName, member?.name?.lastName].filter(Boolean).join(' ');
+      return name ? { source: 'MANUAL', workspaceMemberId: actingMemberId, name, context: {} } : undefined;
+    })());
 
   const listEntries = async (filter: Record<string, unknown>): Promise<StoredEntry[]> => {
     const items: StoredEntry[] = [];
@@ -192,7 +210,10 @@ export const createTwentyProjectStore = (): ProjectStore => {
 
     createEntry: async ({ type, amount, ...data }) => {
       const result = await client.mutation({
-        createProjectEntry: { __args: { data: { ...data, entryType: type, amount } }, id: true },
+        createProjectEntry: {
+          __args: { data: definedOnly({ ...data, entryType: type, amount, createdBy: await actingCreatedBy() }) },
+          id: true,
+        },
       });
       return (result.createProjectEntry as { id: string }).id;
     },

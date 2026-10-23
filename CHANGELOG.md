@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.14.6
+
+- Project entries created from the "Przypnij pozycje faktur" panel show the person who used the panel in "Created by", not the app name
+
 ## 0.14.5
 
 - The "Przypnij pozycje faktur" panel hides lines already fully pinned to projects, also in search results. A "Pokaż pozycje już rozliczone" checkbox shows them again, as in the "Rozlicz przelewy" panel

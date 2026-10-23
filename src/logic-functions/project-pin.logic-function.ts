@@ -18,11 +18,12 @@ export default defineLogicFunction({
     httpMethod: 'POST',
     isAuthRequired: true,
   },
-  handler: async (event: { body: object | null }) => {
+  handler: async (event: { body: object | null }, context?: { workspaceMemberId?: string | null }) => {
     const { projectId, items, note } = (event.body ?? {}) as PinBody;
     if (!projectId || !Array.isArray(items)) return { ok: false, message: 'Wybierz projekt i pozycje.' };
     try {
-      return { ok: true, ...(await pinLines(createTwentyProjectStore(), projectId, items, note?.trim() || null)) };
+      const store = createTwentyProjectStore(context?.workspaceMemberId ?? null);
+      return { ok: true, ...(await pinLines(store, projectId, items, note?.trim() || null)) };
     } catch (e) {
       if (!(e instanceof PinError)) console.error(`[project-pin] ${errorMessage(e)}`);
       return { ok: false, message: errorMessage(e) };
