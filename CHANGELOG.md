@@ -2,6 +2,20 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.14.2
+
+- Project code uses the generated `CoreApiClient` again, as the Twenty docs recommend. The plain-GraphQL workaround from 0.14.1 is removed
+
+## 0.14.1
+
+- Fix "type `Query` does not have a field `projects`" in the "Przypnij pozycje faktur" panel. After a deploy, the function executor could keep the typed client generated before the project objects existed. The project code now sends plain GraphQL text, which the server checks against its current schema
+
+## 0.14.0
+
+- "Przypnij pozycje faktur" panel, pinned on the project entry list and on a project: pick a project, tick several invoice lines and save them in one go. Each line shows its unallocated rest and the projects it is already pinned to; the type (revenue or cost) and amount are prefilled and can be changed
+- Search by invoice number, KSeF number or counterparty name (e.g. a supplier). Without a search the panel lists the latest lines not yet fully pinned
+- Saving checks every line first: an amount above the unallocated rest rejects the whole save
+
 ## 0.13.0
 
 - New `project` object ("Projekty"): name, client (company or person), status (Planowany, W realizacji, Wstrzymany, Zakończony, Rozliczony, Anulowany), description and dates. Revenue, cost, margin and margin % in PLN are computed by the app and read-only

@@ -155,6 +155,8 @@ export const ID = {
   fnAllocChanged: '14934d8c-48b2-4c76-998d-f163ae1e8db6',
   fnProjectEntryChanged: 'cf2540a8-b98d-4325-8e5b-ccab2fdd8bbc',
   fnProjectChanged: '20b23fe3-9e02-4dcd-ac4f-faacf3251b4b',
+  fnProjectPinContext: 'e3d93d51-284e-40f3-872b-03e3ff401512',
+  fnProjectPin: 'd508f4ec-62a6-41d5-9dc0-17714467c263',
 
   fcSyncCommand: 'a00503de-99a0-408b-993d-bd1725886bff',
   cmdSync: 'bd29b4c2-6dfa-4c5b-b7d2-ecd9d46f783a',
@@ -164,6 +166,9 @@ export const ID = {
   cmdBankConnect: '04485172-16a4-49ed-bf42-62a84b64f4d0',
   fcBankAllocate: 'f6c5c670-047c-4f88-9679-24e79bfda7db',
   cmdBankAllocate: '232c96f9-85c5-4deb-b749-9324a0914415',
+  fcProjectPin: '725237a5-43a9-4b06-97b3-ff6c0c65a65f',
+  cmdProjectPinEntries: 'f03b57b3-7ec3-4f55-b68d-853932d60f35',
+  cmdProjectPinProject: 'c2ef6c56-d885-4e85-9fb8-5e6f68649a97',
 
   viewSales: '77628d2c-df5b-41ff-960e-a6ae91d3f177',
   viewPurchases: 'e05d113d-d2a6-40ef-97ff-e30269f23cc1',
