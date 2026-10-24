@@ -38,6 +38,7 @@ type ApiBody = { success?: boolean; errorType?: string; error?: string } & Recor
 
 export type RocketChatRooms = {
   createGroup: (name: string) => Promise<{ id: string; name: string }>;
+  rename: (roomId: string, name: string) => Promise<{ id: string; name: string }>;
   findUserId: (username: string) => Promise<string | null>;
   invite: (roomId: string, userId: string) => Promise<void>;
   kick: (roomId: string, userId: string) => Promise<void>;
@@ -68,6 +69,11 @@ export const createRocketChatRooms = (
   return {
     createGroup: async (name) => {
       const body = await call('groups.create', { body: { name } }, `nie utworzył kanału ${name}`);
+      const group = body.group as { _id: string; name: string };
+      return { id: group._id, name: group.name };
+    },
+    rename: async (roomId, name) => {
+      const body = await call('groups.rename', { body: { roomId, name } }, `nie zmienił nazwy kanału na ${name}`);
       const group = body.group as { _id: string; name: string };
       return { id: group._id, name: group.name };
     },

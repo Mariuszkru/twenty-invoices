@@ -4,6 +4,7 @@ import { createRocketChatRooms, rocketChatServerUrl } from 'src/lib/notify/rocke
 import {
   createProjectChannel,
   projectChannelName,
+  renameProjectChannel,
   setUpProjectChannel,
   syncProjectMembership,
   type ChannelStore,
@@ -29,6 +30,13 @@ const fakeRocketChat = (existing: string[] = [], users: string[] = ['anna', 'jan
       }
       groups.set(`id-${body!.name}`, { name: body!.name, members: new Set() });
       return json({ success: true, group: { _id: `id-${body!.name}`, name: body!.name } });
+    }
+    if (path === 'groups.rename') {
+      if ([...groups].some(([id, g]) => g.name === body!.name && id !== body!.roomId)) {
+        return json({ success: false, errorType: 'error-duplicate-channel-name', error: 'duplicate' }, 400);
+      }
+      groups.get(body!.roomId)!.name = body!.name;
+      return json({ success: true, group: { _id: body!.roomId, name: body!.name } });
     }
     if (path === 'users.info') {
       const username = new URL(url).searchParams.get('username')!;
@@ -106,6 +114,22 @@ describe('kanał Rocket.Chat dla projektu', () => {
     expect(chat.groups.size).toBe(2);
   });
 
+  it('nazwa zajęta przez kanał zarchiwizowany też dostaje końcówkę', async () => {
+    const rooms = createRocketChatRooms(
+      { serverUrl: 'https://chat.example.pl', userId: 'u1', authToken: 't1' },
+      (async (_url: string, init: RequestInit) => {
+        const { name } = JSON.parse(init.body as string) as { name: string };
+        return name === 'crm'
+          ? json({ success: false, errorType: 'error-archived-duplicate-name', error: 'archived' }, 400)
+          : json({ success: true, group: { _id: 'g1', name } });
+      }) as typeof fetch,
+    );
+    expect(await createProjectChannel(rooms.createGroup, PROJECT_ID, 'CRM')).toEqual({
+      created: 'crm-3f2a9c1b',
+      roomId: 'g1',
+    });
+  });
+
   it('projekt bez nazwy', async () => {
     const chat = fakeRocketChat();
     expect(await createProjectChannel(chat.rooms.createGroup, PROJECT_ID, '')).toMatchObject({
@@ -136,6 +160,45 @@ describe('kanał Rocket.Chat dla projektu', () => {
     });
     expect(crm.roomIds.get(PROJECT_ID)).toBe('id-crm');
     expect([...chat.groups.get('id-crm')!.members]).toEqual(['u-anna']);
+  });
+});
+
+describe('zmiana nazwy projektu', () => {
+  const setUp = async (existing: string[] = []) => {
+    const chat = fakeRocketChat(existing);
+    const crm = memoryStore();
+    await setUpProjectChannel(chat.rooms, crm.store, PROJECT_ID, 'CRM');
+    return { chat, crm, channelName: () => chat.groups.get('id-crm')!.name };
+  };
+
+  it('zmienia nazwę kanału', async () => {
+    const { chat, crm, channelName } = await setUp();
+    expect(await renameProjectChannel(chat.rooms, crm.store, PROJECT_ID, 'CRM', 'Wdrożenie CRM')).toEqual({
+      renamed: 'wdrozenie-crm',
+    });
+    expect(channelName()).toBe('wdrozenie-crm');
+  });
+
+  it('zajęta nazwa dostaje końcówkę z ID', async () => {
+    const { chat, crm, channelName } = await setUp(['erp']);
+    expect(await renameProjectChannel(chat.rooms, crm.store, PROJECT_ID, 'CRM', 'ERP')).toEqual({
+      renamed: 'erp-3f2a9c1b',
+    });
+    expect(channelName()).toBe('erp-3f2a9c1b');
+  });
+
+  it('nazwa kanału wychodzi ta sama: nic nie wysyła', async () => {
+    const { chat, crm } = await setUp();
+    const sent = chat.requests.length;
+    expect(await renameProjectChannel(chat.rooms, crm.store, PROJECT_ID, 'CRM', 'crm ')).toEqual({
+      skipped: 'SAME_NAME',
+    });
+    expect(chat.requests.length).toBe(sent);
+  });
+
+  it('projekt bez kanału', async () => {
+    const { chat, crm } = await setUp();
+    expect(await renameProjectChannel(chat.rooms, crm.store, 'inny', 'A', 'B')).toEqual({ skipped: 'NO_CHANNEL' });
   });
 });
 

@@ -20,6 +20,30 @@ export const projectChannelName = (projectName: string | null | undefined): stri
     .replace(/^[-.]+|[-.]+$/g, '')
     .slice(0, 60);
 
+// Nazwa z nazwy projektu, a gdy zajęta – z końcówką z identyfikatora projektu; projekt bez nazwy: projekt-<końcówka>.
+const channelNameCandidates = (projectId: string, projectName: string | null | undefined) => {
+  const suffix = projectId.replace(/-/g, '').slice(0, 8);
+  const base = projectChannelName(projectName);
+  return base ? [base, `${base}-${suffix}`] : [`projekt-${suffix}`];
+};
+
+// Nazwę zajmuje też kanał zarchiwizowany, np. zakończonego projektu o tej samej nazwie.
+const isNameTaken = (error: unknown) =>
+  error instanceof RocketChatApiError &&
+  (error.errorType === 'error-duplicate-channel-name' || error.errorType === 'error-archived-duplicate-name');
+
+// Pierwsza wolna nazwa z listy; null, gdy wszystkie są zajęte.
+const withFreeName = async <T>(candidates: string[], attempt: (name: string) => Promise<T>): Promise<T | null> => {
+  for (const name of candidates) {
+    try {
+      return await attempt(name);
+    } catch (error) {
+      if (!isNameTaken(error)) throw error;
+    }
+  }
+  return null;
+};
+
 // Zajęta nazwa: drugi raz z końcówką z identyfikatora projektu. Końcówka jest stała, więc ponowione zdarzenie
 // trafia na ten sam kanał (DUPLICATE) zamiast tworzyć kolejny.
 export const createProjectChannel = async (
@@ -27,18 +51,26 @@ export const createProjectChannel = async (
   projectId: string,
   projectName: string | null | undefined,
 ): Promise<{ created: string; roomId: string } | { skipped: 'DUPLICATE'; name: string }> => {
-  const suffix = projectId.replace(/-/g, '').slice(0, 8);
-  const base = projectChannelName(projectName);
-  const candidates = base ? [base, `${base}-${suffix}`] : [`projekt-${suffix}`];
-  for (const name of candidates) {
-    try {
-      const room = await createGroup(name);
-      return { created: room.name, roomId: room.id };
-    } catch (error) {
-      if (!(error instanceof RocketChatApiError) || error.errorType !== 'error-duplicate-channel-name') throw error;
-    }
-  }
+  const candidates = channelNameCandidates(projectId, projectName);
+  const room = await withFreeName(candidates, createGroup);
+  if (room) return { created: room.name, roomId: room.id };
   return { skipped: 'DUPLICATE', name: candidates[candidates.length - 1] };
+};
+
+// Nowa nazwa projektu: kanał dostaje nazwę jak przy tworzeniu. Zmiana, po której nazwa kanału wyszłaby ta sama
+// (np. tylko wielkość liter), nic nie wysyła. Ponowione zdarzenie trafia na nazwę, którą kanał już ma.
+export const renameProjectChannel = async (
+  rooms: RocketChatRooms,
+  store: ChannelStore,
+  projectId: string,
+  oldName: string | null | undefined,
+  newName: string | null | undefined,
+) => {
+  if (projectChannelName(oldName) === projectChannelName(newName)) return { skipped: 'SAME_NAME' };
+  const roomId = await store.getRoomId(projectId);
+  if (!roomId) return { skipped: 'NO_CHANNEL' };
+  const room = await withFreeName(channelNameCandidates(projectId, newName), (name) => rooms.rename(roomId, name));
+  return room ? { renamed: room.name } : { skipped: 'DUPLICATE' };
 };
 
 // Nowy projekt: prywatny kanał, ID w projekcie i zaproszenie osób przypisanych już w chwili utworzenia.

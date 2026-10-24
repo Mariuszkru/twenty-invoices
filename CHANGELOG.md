@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.14.9
+
+- Renaming a project renames its Rocket.Chat channel, built the same way as on creation (with the project ID suffix when the name is taken). A rename that leaves the channel name the same (e.g. only letter case) does nothing. A channel name taken by an archived channel now also falls back to the suffix instead of failing
+
 ## 0.14.8
 
 - The project channel in Rocket.Chat is now private. Projects have a new "Osoby" field (employees assigned through the new "Członek projektu" object): assigning an employee invites them to the project channel, removing the assignment removes them. Employees have a new "Login Rocket.Chat" field; employees without it, or with a login Rocket.Chat does not know, are skipped. Projects created before this version have no channel, so their assignments do not change anything in Rocket.Chat

@@ -169,6 +169,7 @@ export const ID = {
   fnProjectPin: 'd508f4ec-62a6-41d5-9dc0-17714467c263',
   fnProjectCreated: 'a032fa12-21da-4ff4-845c-f1a4f0b70219',
   fnProjectMemberChanged: '818d154d-2f23-405d-9c0d-1e861f8519f8',
+  fnProjectRenamed: '70398194-ce2b-48ad-ac31-06799da388bc',
 
   fcSyncCommand: 'a00503de-99a0-408b-993d-bd1725886bff',
   cmdSync: 'bd29b4c2-6dfa-4c5b-b7d2-ecd9d46f783a',
