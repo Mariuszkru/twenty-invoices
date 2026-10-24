@@ -2,10 +2,6 @@
 
 All notable changes to this application are documented in this file.
 
-## 0.14.10
-
-- Projects have a "Pracownicy" field (a plain one-to-many relation to employees) instead of "Osoby", and the "Członek projektu" object is gone. An employee belongs to one project at a time (the new "Projekt" field on the employee): adding them to a project invites them to its Rocket.Chat channel, moving them to another project, taking them off or deleting them removes them from the old channel. Filling in or correcting an employee's Rocket.Chat login now also updates the channel. Assignments made in 0.14.8–0.14.9 are deleted with the old object; apply this version without `--no-delete` and add the employees again
-
 ## 0.14.9
 
 - Renaming a project renames its Rocket.Chat channel, built the same way as on creation (with the project ID suffix when the name is taken). A rename that leaves the channel name the same (e.g. only letter case) does nothing. A channel name taken by an archived channel now also falls back to the suffix instead of failing

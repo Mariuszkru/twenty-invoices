@@ -156,16 +156,18 @@ export default defineObject({
       universalSettings: { relationType: RelationType.ONE_TO_MANY },
     },
     {
-      universalIdentifier: ID.projEmployees,
-      name: 'employees',
+      universalIdentifier: ID.projMembers,
+      name: 'members',
       type: FieldType.RELATION,
-      label: 'Pracownicy',
-      description:
-        'Pracownicy przypisani do projektu; są dodawani do kanału projektu w Rocket.Chat. Pracownik należy naraz do jednego projektu.',
+      label: 'Osoby',
+      description: 'Pracownicy przypisani do projektu; są dodawani do kanału projektu w Rocket.Chat.',
       icon: 'IconUsersGroup',
-      relationTargetObjectMetadataUniversalIdentifier: ID.employeeObject,
-      relationTargetFieldMetadataUniversalIdentifier: ID.empProject,
-      universalSettings: { relationType: RelationType.ONE_TO_MANY },
+      relationTargetObjectMetadataUniversalIdentifier: ID.memberObject,
+      relationTargetFieldMetadataUniversalIdentifier: ID.memberProject,
+      universalSettings: {
+        relationType: RelationType.ONE_TO_MANY,
+        junctionTargetFieldUniversalIdentifier: ID.memberEmployee,
+      },
     },
     {
       universalIdentifier: ID.projRocketChatRoomId,

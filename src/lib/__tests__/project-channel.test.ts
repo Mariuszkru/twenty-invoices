@@ -58,21 +58,23 @@ const fakeRocketChat = (existing: string[] = [], users: string[] = ['anna', 'jan
   return { rooms, groups, requests };
 };
 
-type Employee = { projectId: string | null; rocketChatUsername: string | null; deletedAt?: string };
-
-// Pamięciowy CRM: projekty z ID kanału i pracownicy z projektem i loginem (stan już po zmianie).
-const memoryStore = (employees: Employee[] = []) => {
+// Pamięciowy CRM: projekty z ID kanału, pracownicy z loginem i przypisania.
+const memoryStore = (
+  usernames: Record<string, string | null> = { e1: 'anna', e2: 'jan', e3: null, e4: 'ktos' },
+  members: { projectId: string; employeeId: string }[] = [],
+) => {
   const roomIds = new Map<string, string>();
   const store: ChannelStore = {
     getRoomId: async (projectId) => roomIds.get(projectId) ?? null,
     setRoomId: async (projectId, roomId) => void roomIds.set(projectId, roomId),
     listMemberUsernames: async (projectId) =>
-      employees
-        .filter((e) => e.projectId === projectId && !e.deletedAt)
-        .map((e) => e.rocketChatUsername)
+      members
+        .filter((m) => m.projectId === projectId)
+        .map((m) => usernames[m.employeeId])
         .filter((u): u is string => !!u),
+    getUsername: async (employeeId) => usernames[employeeId] ?? null,
   };
-  return { store, roomIds, employees };
+  return { store, roomIds, members };
 };
 
 describe('kanał Rocket.Chat dla projektu', () => {
@@ -145,10 +147,10 @@ describe('kanał Rocket.Chat dla projektu', () => {
 
   it('nowy projekt: ID kanału w projekcie i zaproszenie już przypisanych osób', async () => {
     const chat = fakeRocketChat();
-    const crm = memoryStore([
-      { projectId: PROJECT_ID, rocketChatUsername: 'anna' },
-      { projectId: PROJECT_ID, rocketChatUsername: null },
-      { projectId: PROJECT_ID, rocketChatUsername: 'ktos' },
+    const crm = memoryStore(undefined, [
+      { projectId: PROJECT_ID, employeeId: 'e1' },
+      { projectId: PROJECT_ID, employeeId: 'e3' },
+      { projectId: PROJECT_ID, employeeId: 'e4' },
     ]);
     expect(await setUpProjectChannel(chat.rooms, crm.store, PROJECT_ID, 'CRM')).toEqual({
       created: 'crm',
@@ -200,103 +202,70 @@ describe('zmiana nazwy projektu', () => {
   });
 });
 
-describe('pracownicy projektu w kanale', () => {
-  const OTHER_ID = '9b8c7d6e-5f4a-4b3c-8d2e-1f0a9b8c7d6e';
-  const anna: Employee = { projectId: PROJECT_ID, rocketChatUsername: 'anna' };
-
+describe('członkowie projektu w kanale', () => {
   const setUp = async () => {
     const chat = fakeRocketChat();
     const crm = memoryStore();
     await setUpProjectChannel(chat.rooms, crm.store, PROJECT_ID, 'CRM');
-    const members = (roomId = 'id-crm') => [...chat.groups.get(roomId)!.members];
+    const members = () => [...chat.groups.get('id-crm')!.members];
     return { chat, crm, members };
   };
 
-  it('dodanie do projektu zaprasza, zdjęcie z projektu wyrzuca', async () => {
+  it('przypisanie zaprasza, usunięcie przypisania wyrzuca', async () => {
     const { chat, crm, members } = await setUp();
-    crm.employees.push(anna);
-    expect(await syncProjectMembership(chat.rooms, crm.store, { ...anna, projectId: null }, anna)).toEqual({
+    const row = { projectId: PROJECT_ID, employeeId: 'e1' };
+    crm.members.push(row);
+    expect(await syncProjectMembership(chat.rooms, crm.store, undefined, row)).toEqual({
       invited: 'anna',
       skipped: [],
     });
     expect(members()).toEqual(['u-anna']);
 
-    crm.employees.splice(0, 1);
-    expect(await syncProjectMembership(chat.rooms, crm.store, anna, { ...anna, projectId: null })).toEqual({
+    crm.members.splice(0, 1);
+    expect(await syncProjectMembership(chat.rooms, crm.store, row, { ...row, deletedAt: '2026-10-24' })).toEqual({
       kicked: 'anna',
       skipped: [],
     });
     expect(members()).toEqual([]);
   });
 
-  it('usunięty pracownik wychodzi z kanału, przywrócony wraca', async () => {
+  it('zmiana pracownika w przypisaniu: stary wychodzi, nowy wchodzi', async () => {
     const { chat, crm, members } = await setUp();
-    const deleted = { ...anna, deletedAt: '2026-10-24' };
-    crm.employees.push(deleted);
     await chat.rooms.invite('id-crm', 'u-anna');
-    expect(await syncProjectMembership(chat.rooms, crm.store, anna, deleted)).toEqual({ kicked: 'anna', skipped: [] });
-    expect(members()).toEqual([]);
-
-    expect(await syncProjectMembership(chat.rooms, crm.store, deleted, anna)).toEqual({ invited: 'anna', skipped: [] });
-    expect(members()).toEqual(['u-anna']);
-  });
-
-  it('przeniesienie do innego projektu: wychodzi ze starego kanału, wchodzi do nowego', async () => {
-    const { chat, crm, members } = await setUp();
-    await setUpProjectChannel(chat.rooms, crm.store, OTHER_ID, 'ERP');
-    await chat.rooms.invite('id-crm', 'u-anna');
-    const moved = { ...anna, projectId: OTHER_ID };
-    crm.employees.push(moved);
-    expect(await syncProjectMembership(chat.rooms, crm.store, anna, moved)).toEqual({
-      kicked: 'anna',
-      invited: 'anna',
-      skipped: [],
-    });
-    expect(members('id-crm')).toEqual([]);
-    expect(members('id-erp')).toEqual(['u-anna']);
-  });
-
-  it('login uzupełniony później zaprasza, poprawiony podmienia osobę w kanale', async () => {
-    const { chat, crm, members } = await setUp();
-    expect(await syncProjectMembership(chat.rooms, crm.store, { ...anna, rocketChatUsername: null }, anna)).toEqual({
-      invited: 'anna',
-      skipped: [],
-    });
-    const jan = { ...anna, rocketChatUsername: 'jan' };
-    crm.employees.push(jan);
-    expect(await syncProjectMembership(chat.rooms, crm.store, anna, jan)).toEqual({
-      kicked: 'anna',
-      invited: 'jan',
-      skipped: [],
-    });
+    crm.members.push({ projectId: PROJECT_ID, employeeId: 'e2' });
+    await syncProjectMembership(
+      chat.rooms,
+      crm.store,
+      { projectId: PROJECT_ID, employeeId: 'e1' },
+      { projectId: PROJECT_ID, employeeId: 'e2' },
+    );
     expect(members()).toEqual(['u-jan']);
   });
 
-  it('inny pracownik projektu z tym samym loginem zostaje w kanale', async () => {
+  it('osoba przypisana drugi raz zostaje w kanale po usunięciu jednego przypisania', async () => {
     const { chat, crm, members } = await setUp();
     await chat.rooms.invite('id-crm', 'u-anna');
-    crm.employees.push(anna);
-    expect(await syncProjectMembership(chat.rooms, crm.store, anna, { ...anna, projectId: null })).toEqual({ skipped: [] });
+    crm.members.push({ projectId: PROJECT_ID, employeeId: 'e1' });
+    await syncProjectMembership(chat.rooms, crm.store, { projectId: PROJECT_ID, employeeId: 'e1' }, undefined);
     expect(members()).toEqual(['u-anna']);
   });
 
   it('pomija pracownika bez loginu, nieznany login i projekt bez kanału', async () => {
     const { chat, crm } = await setUp();
-    expect(await syncProjectMembership(chat.rooms, crm.store, undefined, { ...anna, rocketChatUsername: null })).toEqual({
+    expect(await syncProjectMembership(chat.rooms, crm.store, undefined, { projectId: PROJECT_ID, employeeId: 'e3' })).toEqual({
       skipped: ['NO_USERNAME'],
     });
-    expect(await syncProjectMembership(chat.rooms, crm.store, undefined, { ...anna, rocketChatUsername: 'ktos' })).toEqual({
+    expect(await syncProjectMembership(chat.rooms, crm.store, undefined, { projectId: PROJECT_ID, employeeId: 'e4' })).toEqual({
       skipped: ['UNKNOWN_USER'],
     });
-    expect(await syncProjectMembership(chat.rooms, crm.store, undefined, { ...anna, projectId: 'inny' })).toEqual({
+    expect(await syncProjectMembership(chat.rooms, crm.store, undefined, { projectId: 'inny', employeeId: 'e1' })).toEqual({
       skipped: ['NO_CHANNEL'],
     });
   });
 
-  it('ten sam projekt i login (zmiana innych pól, spacje wokół loginu) nic nie robią', async () => {
+  it('zmiana innych pól przypisania nic nie robi', async () => {
     const { chat, crm } = await setUp();
-    expect(await syncProjectMembership(chat.rooms, crm.store, anna, { ...anna, rocketChatUsername: ' anna ' })).toEqual({
-      skipped: 'NO_CHANGE',
-    });
+    const row = { projectId: PROJECT_ID, employeeId: 'e1' };
+    expect(await syncProjectMembership(chat.rooms, crm.store, row, row)).toEqual({ skipped: 'NO_CHANGE' });
   });
 });

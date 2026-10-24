@@ -23,14 +23,21 @@ export const createTwentyChannelStore = (): ChannelStore => {
 
     listMemberUsernames: async (projectId) => {
       const result = await client.query({
-        employees: {
+        projectMembers: {
           __args: { filter: { projectId: { eq: projectId } }, first: PAGE },
-          edges: { node: { rocketChatUsername: true } },
+          edges: { node: { employee: { rocketChatUsername: true } } },
         },
       });
-      return (result.employees as Edges<{ rocketChatUsername: string | null }>).edges
-        .map((e) => e.node.rocketChatUsername?.trim())
+      return (result.projectMembers as Edges<{ employee: { rocketChatUsername: string | null } | null }>).edges
+        .map((e) => e.node.employee?.rocketChatUsername?.trim())
         .filter((username): username is string => !!username);
+    },
+
+    getUsername: async (employeeId) => {
+      const result = await client.query({
+        employees: { __args: { filter: { id: { eq: employeeId } }, first: 1 }, edges: { node: { rocketChatUsername: true } } },
+      });
+      return (result.employees as Edges<{ rocketChatUsername: string | null }>).edges[0]?.node.rocketChatUsername?.trim() || null;
     },
   };
 };
