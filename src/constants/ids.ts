@@ -98,6 +98,14 @@ export const ID = {
   projMarginPercent: '2db6a94e-703e-4a3c-9363-321b1a66bc7f',
   projIssues: 'a2e7d743-531e-4f7b-9c09-0151edf45d84',
   projEntries: '3a2440a6-db9d-45a8-88fa-1099c3d4ae61',
+  projMembers: 'c0d20954-2ced-4f17-bdb7-ad8b4d3c68ce',
+  projRocketChatRoomId: 'd8e3a05c-e3ae-4aad-9860-3fc4740ffb97',
+
+  memberObject: '7f2c1119-2df5-48e0-8a90-a4e077cd9655',
+  memberProject: 'f9efba05-190e-44e6-8dfd-e5b3f52490b6',
+  memberEmployee: 'ff9cbf4e-cc23-4428-a214-3e7069b2434e',
+  empRocketChatUsername: '4676fced-2824-4653-a225-972d4fc93d4f',
+  empProjectMemberships: '6d04cc6e-565d-41a9-b6e7-284ed43b7929',
 
   entryObject: '17803dac-3eed-42da-abc3-6dbb1eaa3130',
   entryProject: '7d57c04d-f107-4ac8-b61c-0c66ea885537',
@@ -160,6 +168,7 @@ export const ID = {
   fnProjectPinContext: 'e3d93d51-284e-40f3-872b-03e3ff401512',
   fnProjectPin: 'd508f4ec-62a6-41d5-9dc0-17714467c263',
   fnProjectCreated: 'a032fa12-21da-4ff4-845c-f1a4f0b70219',
+  fnProjectMemberChanged: '818d154d-2f23-405d-9c0d-1e861f8519f8',
 
   fcSyncCommand: 'a00503de-99a0-408b-993d-bd1725886bff',
   cmdSync: 'bd29b4c2-6dfa-4c5b-b7d2-ecd9d46f783a',

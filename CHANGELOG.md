@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.14.8
+
+- The project channel in Rocket.Chat is now private. Projects have a new "Osoby" field (employees assigned through the new "Członek projektu" object): assigning an employee invites them to the project channel, removing the assignment removes them. Employees have a new "Login Rocket.Chat" field; employees without it, or with a login Rocket.Chat does not know, are skipped. Projects created before this version have no channel, so their assignments do not change anything in Rocket.Chat
+
 ## 0.14.7
 
 - A new project gets a public Rocket.Chat channel named after it (lowercase, no Polish characters, e.g. `wdrozenie-crm`). If the name is taken, the channel gets a suffix from the project ID. Needs the new `ROCKETCHAT_USER_ID` and `ROCKETCHAT_AUTH_TOKEN` variables (Personal Access Token) next to the webhook; without them projects get no channel

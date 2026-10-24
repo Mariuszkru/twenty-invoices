@@ -28,6 +28,7 @@ export default defineView({
     { universalIdentifier: '216b9147-807d-4e70-9c9d-6d31d19a1ea1', fieldMetadataUniversalIdentifier: ID.projMargin, position: 5, isVisible: true, size: 150 },
     { universalIdentifier: '3eb44c42-1ff8-4123-a1df-da021e527970', fieldMetadataUniversalIdentifier: ID.projMarginPercent, position: 6, isVisible: true, size: 110 },
     { universalIdentifier: '0d4ec44a-e822-4591-a0c0-7b96b0d66bd1', fieldMetadataUniversalIdentifier: ID.projIssues, position: 7, isVisible: true, size: 220 },
+    { universalIdentifier: '51100829-f265-4825-9453-4ef0d8fa1ec0', fieldMetadataUniversalIdentifier: ID.projMembers, position: 8, isVisible: true, size: 220 },
   ],
   sorts: [
     {

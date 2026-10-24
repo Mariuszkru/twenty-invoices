@@ -62,7 +62,7 @@ export default defineApplication({
       universalIdentifier: ID.varRocketChatAuthToken,
       label: 'Rocket.Chat: token API',
       description:
-        'Personal Access Token użytkownika z uprawnieniem do tworzenia kanałów publicznych. Puste = projekty bez kanałów.',
+        'Personal Access Token użytkownika z uprawnieniem do tworzenia kanałów prywatnych. Puste = projekty bez kanałów.',
       isSecret: true,
     },
     CRM_URL: {

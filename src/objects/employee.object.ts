@@ -32,5 +32,27 @@ export default defineObject({
       relationTargetFieldMetadataUniversalIdentifier: ID.btxEmployee,
       universalSettings: { relationType: RelationType.ONE_TO_MANY },
     },
+    {
+      universalIdentifier: ID.empRocketChatUsername,
+      type: FieldType.TEXT,
+      name: 'rocketChatUsername',
+      label: 'Login Rocket.Chat',
+      description: 'Nazwa użytkownika w Rocket.Chat (bez @); potrzebna, żeby dodać pracownika do kanałów projektów.',
+      icon: 'IconAt',
+    },
+    {
+      universalIdentifier: ID.empProjectMemberships,
+      name: 'projectMemberships',
+      type: FieldType.RELATION,
+      label: 'Projekty',
+      description: 'Projekty, do których pracownik jest przypisany.',
+      icon: 'IconBriefcase',
+      relationTargetObjectMetadataUniversalIdentifier: ID.memberObject,
+      relationTargetFieldMetadataUniversalIdentifier: ID.memberEmployee,
+      universalSettings: {
+        relationType: RelationType.ONE_TO_MANY,
+        junctionTargetFieldUniversalIdentifier: ID.memberProject,
+      },
+    },
   ],
 });
