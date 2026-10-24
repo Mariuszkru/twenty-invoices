@@ -1,11 +1,10 @@
 import { RocketChatApiError, type RocketChatRooms } from 'src/lib/notify/rocketchat';
 
-// Dane CRM potrzebne do kanałów: ID kanału zapisane w projekcie i loginy Rocket.Chat członków projektu.
+// Dane CRM potrzebne do kanałów: ID kanału zapisane w projekcie i loginy Rocket.Chat pracowników projektu.
 export type ChannelStore = {
   getRoomId: (projectId: string) => Promise<string | null>;
   setRoomId: (projectId: string, roomId: string) => Promise<void>;
   listMemberUsernames: (projectId: string) => Promise<string[]>;
-  getUsername: (employeeId: string) => Promise<string | null>;
 };
 
 // Domyślna walidacja nazw kanałów w Rocket.Chat to [0-9a-zA-Z-_.]+, więc usuwamy polskie znaki i resztę zamieniamy na "-".
@@ -102,46 +101,47 @@ const inviteUsernames = async (rooms: RocketChatRooms, roomId: string, usernames
   return { invited, unknown };
 };
 
-type Membership = { projectId?: string | null; employeeId?: string | null; deletedAt?: string | null };
+// Rekord pracownika ze zdarzenia. Login bierzemy z rekordu, nie z CRM: usuniętego pracownika zapytanie już nie znajdzie.
+type EmployeeRow = { projectId?: string | null; rocketChatUsername?: string | null; deletedAt?: string | null };
 
-const active = (row: Membership | undefined) =>
-  row && !row.deletedAt && row.projectId && row.employeeId
-    ? { projectId: row.projectId, employeeId: row.employeeId }
+const membership = (row: EmployeeRow | undefined) =>
+  row && !row.deletedAt && row.projectId
+    ? { projectId: row.projectId, username: row.rocketChatUsername?.trim() || null }
     : null;
 
-// Członek projektu dodany, usunięty, przywrócony albo przepięty: zaproszenie do nowego kanału i usunięcie ze starego.
-// Projekt bez kanału (utworzony przed tą funkcją albo bez tokenu) i pracownik bez loginu są pomijani.
+// Pracownik dodany do projektu, przeniesiony, zdjęty z projektu, usunięty, przywrócony albo ze zmienionym loginem:
+// zaproszenie do nowego kanału i usunięcie ze starego. Projekt bez kanału (utworzony przed tą funkcją albo bez tokenu)
+// i pracownik bez loginu są pomijani.
 export const syncProjectMembership = async (
   rooms: RocketChatRooms,
   store: ChannelStore,
-  before: Membership | undefined,
-  after: Membership | undefined,
+  before: EmployeeRow | undefined,
+  after: EmployeeRow | undefined,
 ) => {
-  const from = active(before);
-  const to = active(after);
-  if (from?.projectId === to?.projectId && from?.employeeId === to?.employeeId) return { skipped: 'NO_CHANGE' };
+  const from = membership(before);
+  const to = membership(after);
+  if (from?.projectId === to?.projectId && from?.username === to?.username) return { skipped: 'NO_CHANGE' };
 
   const result: { invited?: string; kicked?: string; skipped: string[] } = { skipped: [] };
-  if (from) {
+  // bez loginu pracownik nie mógł być w kanale, więc nie ma kogo usuwać
+  if (from?.username) {
     const roomId = await store.getRoomId(from.projectId);
-    const username = await store.getUsername(from.employeeId);
-    // ta sama osoba może być przypisana do projektu drugi raz – wtedy zostaje w kanale
-    if (!roomId || !username) result.skipped.push(!roomId ? 'NO_CHANNEL' : 'NO_USERNAME');
-    else if (!(await store.listMemberUsernames(from.projectId)).includes(username)) {
-      const userId = await rooms.findUserId(username);
+    if (!roomId) result.skipped.push('NO_CHANNEL');
+    // inny pracownik projektu z tym samym loginem (np. zdublowany rekord) – wtedy login zostaje w kanale
+    else if (!(await store.listMemberUsernames(from.projectId)).includes(from.username)) {
+      const userId = await rooms.findUserId(from.username);
       if (userId) {
         await rooms.kick(roomId, userId);
-        result.kicked = username;
+        result.kicked = from.username;
       } else result.skipped.push('UNKNOWN_USER');
     }
   }
   if (to) {
     const roomId = await store.getRoomId(to.projectId);
-    const username = await store.getUsername(to.employeeId);
-    if (!roomId || !username) result.skipped.push(!roomId ? 'NO_CHANNEL' : 'NO_USERNAME');
+    if (!roomId || !to.username) result.skipped.push(!roomId ? 'NO_CHANNEL' : 'NO_USERNAME');
     else {
-      const { invited, unknown } = await inviteUsernames(rooms, roomId, [username]);
-      if (invited.length) result.invited = username;
+      const { invited, unknown } = await inviteUsernames(rooms, roomId, [to.username]);
+      if (invited.length) result.invited = to.username;
       if (unknown.length) result.skipped.push('UNKNOWN_USER');
     }
   }

@@ -7,21 +7,22 @@ import { createRocketChatRooms } from 'src/lib/notify/rocketchat';
 import { syncProjectMembership } from 'src/lib/projects/project-channel';
 import { createTwentyChannelStore } from 'src/lib/projects/twenty-channel-store';
 
-type MemberRow = { projectId?: string | null; employeeId?: string | null; deletedAt?: string | null };
+type EmployeeRow = { projectId?: string | null; rocketChatUsername?: string | null; deletedAt?: string | null };
 
-// Przypisanie pracownika do projektu dodaje go do kanału projektu w Rocket.Chat, usunięcie przypisania – usuwa.
-const handler = async (event: DatabaseEventPayload<ObjectRecordEvent<MemberRow>>) => {
+// Pracownik dodany do projektu trafia do kanału projektu w Rocket.Chat; przeniesiony, zdjęty z projektu albo usunięty –
+// wychodzi ze starego kanału.
+const handler = async (event: DatabaseEventPayload<ObjectRecordEvent<EmployeeRow>>) => {
   const api = rocketChatApiFromEnv();
   if (!api) return { skipped: 'NOT_CONFIGURED' };
-  const { before, after } = event.properties as { before?: MemberRow; after?: MemberRow };
+  const { before, after } = event.properties as { before?: EmployeeRow; after?: EmployeeRow };
   return syncProjectMembership(createRocketChatRooms(api), createTwentyChannelStore(), before, after);
 };
 
 export default defineLogicFunction({
-  universalIdentifier: ID.fnProjectMemberChanged,
-  name: 'project-member-changed',
-  description: 'Dodaje albo usuwa pracownika z kanału projektu w Rocket.Chat po zmianie członków projektu.',
+  universalIdentifier: ID.fnEmployeeChanged,
+  name: 'employee-changed',
+  description: 'Dodaje albo usuwa pracownika z kanału projektu w Rocket.Chat po zmianie projektu albo loginu pracownika.',
   timeoutSeconds: 30,
-  databaseEventTriggerSettings: { eventName: 'projectMember.*' },
+  databaseEventTriggerSettings: { eventName: 'employee.*' },
   handler,
 });

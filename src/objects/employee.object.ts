@@ -1,4 +1,4 @@
-import { defineObject, FieldType, RelationType } from 'twenty-sdk/define';
+import { defineObject, FieldType, OnDeleteAction, RelationType } from 'twenty-sdk/define';
 
 import { ID } from 'src/constants/ids';
 
@@ -41,17 +41,18 @@ export default defineObject({
       icon: 'IconAt',
     },
     {
-      universalIdentifier: ID.empProjectMemberships,
-      name: 'projectMemberships',
+      universalIdentifier: ID.empProject,
+      name: 'project',
       type: FieldType.RELATION,
-      label: 'Projekty',
-      description: 'Projekty, do których pracownik jest przypisany.',
+      label: 'Projekt',
+      description: 'Projekt, do którego pracownik jest przypisany; pracownik należy do kanału tego projektu w Rocket.Chat.',
       icon: 'IconBriefcase',
-      relationTargetObjectMetadataUniversalIdentifier: ID.memberObject,
-      relationTargetFieldMetadataUniversalIdentifier: ID.memberEmployee,
+      relationTargetObjectMetadataUniversalIdentifier: ID.projectObject,
+      relationTargetFieldMetadataUniversalIdentifier: ID.projEmployees,
       universalSettings: {
-        relationType: RelationType.ONE_TO_MANY,
-        junctionTargetFieldUniversalIdentifier: ID.memberProject,
+        relationType: RelationType.MANY_TO_ONE,
+        onDelete: OnDeleteAction.SET_NULL,
+        joinColumnName: 'projectId',
       },
     },
   ],
