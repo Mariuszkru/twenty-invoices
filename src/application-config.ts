@@ -52,19 +52,6 @@ export default defineApplication({
         'Adres webhooka przychodzącego (Administracja → Integracje). Puste = bez powiadomień o nowych fakturach i terminach płatności.',
       isSecret: true,
     },
-    ROCKETCHAT_USER_ID: {
-      universalIdentifier: ID.varRocketChatUserId,
-      label: 'Rocket.Chat: identyfikator użytkownika',
-      description:
-        'User ID z Personal Access Token (Mój profil → Personal Access Tokens). Razem z tokenem i webhookiem włącza tworzenie kanału dla każdego nowego projektu.',
-    },
-    ROCKETCHAT_AUTH_TOKEN: {
-      universalIdentifier: ID.varRocketChatAuthToken,
-      label: 'Rocket.Chat: token API',
-      description:
-        'Personal Access Token użytkownika z uprawnieniem do tworzenia kanałów prywatnych. Puste = projekty bez kanałów.',
-      isSecret: true,
-    },
     CRM_URL: {
       universalIdentifier: ID.varCrmUrl,
       label: 'Adres CRM',

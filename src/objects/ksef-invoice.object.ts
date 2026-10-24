@@ -22,6 +22,7 @@ import {
 } from 'src/constants/options';
 
 // Nagłówek faktury z KSeF. Pole `name` (dodawane automatycznie) przechowuje numer faktury nadany przez wystawcę.
+// Przypięcia do projektów (projectEntries) dodaje osobna aplikacja Projekty (twenty-projects).
 export default defineObject({
   universalIdentifier: ID.invoiceObject,
   nameSingular: 'ksefInvoice',
@@ -223,17 +224,6 @@ export default defineObject({
       icon: 'IconBuildingBank',
       relationTargetObjectMetadataUniversalIdentifier: ID.allocObject,
       relationTargetFieldMetadataUniversalIdentifier: ID.allocInvoice,
-      universalSettings: { relationType: RelationType.ONE_TO_MANY },
-    },
-    {
-      universalIdentifier: ID.invProjectEntries,
-      name: 'projectEntries',
-      type: FieldType.RELATION,
-      label: 'Projekty',
-      description: 'Pozycje tej faktury przypięte do projektów.',
-      icon: 'IconBriefcase',
-      relationTargetObjectMetadataUniversalIdentifier: ID.entryObject,
-      relationTargetFieldMetadataUniversalIdentifier: ID.entryInvoice,
       universalSettings: { relationType: RelationType.ONE_TO_MANY },
     },
     {

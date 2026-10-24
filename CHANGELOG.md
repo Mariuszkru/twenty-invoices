@@ -2,6 +2,13 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.15.0
+
+- Projects move to the separate Projekty app (`twenty-projects`), so this app deals only with invoices. Removed here: the `project`, `projectEntry` and `projectMember` objects, the "Przypnij pozycje faktur" panel, the project triggers and Rocket.Chat channels, the "Projekty" views and navigation item, and the `projects` fields on companies and people
+- Also moved: "Przypisanie do usługi" (`allocationStatus`) and "Projekty" on invoice lines, "Projekty" on invoices, "Login Rocket.Chat" and "Projekty" on employees, and the "Koszty do przypisania" view. "Kategoria kosztu" (`costCategory`) stays
+- `ROCKETCHAT_USER_ID` and `ROCKETCHAT_AUTH_TOKEN` are removed. `ROCKETCHAT_WEBHOOK_URL` still sends the invoice, payment and bank notifications
+- Deploying this version deletes those objects and fields with their data, so it must run without `--no-delete` once. Install `twenty-projects` afterwards; project records are not carried over
+
 ## 0.14.9
 
 - Renaming a project renames its Rocket.Chat channel, built the same way as on creation (with the project ID suffix when the name is taken). A rename that leaves the channel name the same (e.g. only letter case) does nothing. A channel name taken by an archived channel now also falls back to the suffix instead of failing

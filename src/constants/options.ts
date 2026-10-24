@@ -91,18 +91,6 @@ export const COST_CATEGORY_OPTIONS = [
   { value: 'OTHER', label: 'Inne', position: 4, color: 'brown' },
 ] as const;
 
-export const ALLOCATION_STATUS = {
-  UNASSIGNED: 'UNASSIGNED',
-  PARTIAL: 'PARTIAL',
-  ASSIGNED: 'ASSIGNED',
-} as const;
-
-export const ALLOCATION_STATUS_OPTIONS = [
-  { value: ALLOCATION_STATUS.UNASSIGNED, label: 'Nieprzypisana', position: 0, color: 'gray' },
-  { value: ALLOCATION_STATUS.PARTIAL, label: 'Częściowo', position: 1, color: 'yellow' },
-  { value: ALLOCATION_STATUS.ASSIGNED, label: 'Przypisana', position: 2, color: 'green' },
-] as const;
-
 // Transakcje z wyciągu bankowego (Enable Banking): wpływ albo wydatek, kwota zawsze dodatnia.
 export const BANK_DIRECTION = { CREDIT: 'CREDIT', DEBIT: 'DEBIT' } as const;
 export type BankDirection = (typeof BANK_DIRECTION)[keyof typeof BANK_DIRECTION];
@@ -151,33 +139,6 @@ export const EXPENSE_CATEGORY_OPTIONS = PAYMENT_PURPOSE_OPTIONS.filter(
 
 export const isExpenseCategory = (value: string | null | undefined): value is ExpenseCategory =>
   Object.values(EXPENSE_CATEGORY).some((c) => c === value);
-
-export const PROJECT_STATUS = {
-  PLANNED: 'PLANNED',
-  IN_PROGRESS: 'IN_PROGRESS',
-  ON_HOLD: 'ON_HOLD',
-  DONE: 'DONE',
-  SETTLED: 'SETTLED',
-  CANCELLED: 'CANCELLED',
-} as const;
-
-export const PROJECT_STATUS_OPTIONS = [
-  { value: PROJECT_STATUS.PLANNED, label: 'Planowany', position: 0, color: 'gray' },
-  { value: PROJECT_STATUS.IN_PROGRESS, label: 'W realizacji', position: 1, color: 'blue' },
-  { value: PROJECT_STATUS.ON_HOLD, label: 'Wstrzymany', position: 2, color: 'yellow' },
-  { value: PROJECT_STATUS.DONE, label: 'Zakończony', position: 3, color: 'green' },
-  { value: PROJECT_STATUS.SETTLED, label: 'Rozliczony', position: 4, color: 'purple' },
-  { value: PROJECT_STATUS.CANCELLED, label: 'Anulowany', position: 5, color: 'red' },
-] as const;
-
-// Pozycja projektu liczy się do przychodu albo kosztu projektu.
-export const ENTRY_TYPE = { REVENUE: 'REVENUE', COST: 'COST' } as const;
-export type EntryType = (typeof ENTRY_TYPE)[keyof typeof ENTRY_TYPE];
-
-export const ENTRY_TYPE_OPTIONS = [
-  { value: ENTRY_TYPE.REVENUE, label: 'Przychód', position: 0, color: 'green' },
-  { value: ENTRY_TYPE.COST, label: 'Koszt', position: 1, color: 'orange' },
-] as const;
 
 // Skąd pochodzi rozliczenie transakcji z fakturą.
 export const ALLOCATION_ORIGIN = { AUTO: 'AUTO', MANUAL: 'MANUAL' } as const;

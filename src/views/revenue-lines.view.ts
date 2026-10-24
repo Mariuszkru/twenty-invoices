@@ -32,7 +32,6 @@ export default defineView({
     { universalIdentifier: '5e86fd65-491b-4226-bd38-d93b9580566d', fieldMetadataUniversalIdentifier: ID.lineIssueDate, position: 3, isVisible: true, size: 130 },
     { universalIdentifier: 'cc5299a5-9cf5-4649-b74f-f4a974a0a53e', fieldMetadataUniversalIdentifier: ID.lineNet, position: 4, isVisible: true, size: 140 },
     { universalIdentifier: 'a4012745-a141-4056-9643-fe4e07740515', fieldMetadataUniversalIdentifier: ID.lineMarginEffectPln, position: 5, isVisible: true, size: 160 },
-    { universalIdentifier: '902e9969-a96a-49c2-8d1d-60450a8fa07a', fieldMetadataUniversalIdentifier: ID.lineAllocationStatus, position: 6, isVisible: true, size: 160 },
   ],
   filters: [
     {

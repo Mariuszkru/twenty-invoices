@@ -1,14 +1,14 @@
 # Faktury KSeF
 
-A Twenty app that imports every sales and purchase invoice from the Polish National e-Invoicing System (KSeF API 2.0) into the CRM. Each invoice line is its own record, so lines can later be assigned to delivered services to compute real margin.
+A Twenty app that imports every sales and purchase invoice from the Polish National e-Invoicing System (KSeF API 2.0) into the CRM. Each invoice line is its own record, so the separate Projekty app (`twenty-projects`) can pin lines to projects and compute real margin.
 
 ## Features
 
 - Incremental sync of sales (Subject1) and purchase (Subject2) invoices. It runs every 15 minutes and on demand from the command menu ("Synchronizuj faktury z KSeF").
 - `ksefInvoice` object: header data from KSeF metadata. It links to the matching Company by NIP and to the invoice it corrects, and stores the original FA(3) XML in a file field.
 - `ksefInvoiceLine` object: one record per `FaWiersz` with quantity, prices, VAT rate and codes. It also stores `marginEffectPln`, a signed net amount in PLN: sales count as positive and purchases as negative. A "before correction" line flips its sign. Foreign currencies use the rate printed on the invoice, or the NBP rate from the previous business day.
-- Fields ready for margin work: `costCategory` and `allocationStatus`, plus the "Koszty do przypisania" (costs to assign) view.
-- Projects with margin. See [Projects](#projects).
+- `costCategory` ("Kategoria kosztu") on invoice lines classifies a purchase: subcontractor, material, license, overhead or other.
+- Projects with margin live in the separate Projekty app. See [Projects](#projects).
 - The app settings page shows a health banner with the result of the last sync.
 - Daily bank statement through Enable Banking (PSD2): incoming payments are matched to sales invoices and outgoing payments to purchase invoices. A confident match marks the invoice paid. See [Bank statement](#bank-statement).
 
@@ -44,13 +44,9 @@ The bank consent lasts at most 180 days. Rocket.Chat gets a warning 14 days and 
 
 ## Projects
 
-A `project` has a client (a company or a person, exactly one), a status and the computed revenue, cost, margin and margin %. Invoice lines are pinned to it through `projectEntry` records, as revenue or cost:
+Since 0.15.0 projects live in the separate Projekty app (`twenty-projects`), and this app deals only with invoices. Projekty pins invoice lines to projects through its own `projectEntry` object and computes the margin from `marginEffectPln`. It adds "Przypisanie do usługi" and the "Koszty do przypisania" view to invoice lines, and "Login Rocket.Chat" and "Projekty" to employees.
 
-- An empty type follows the invoice direction (sale → revenue, purchase → cost); the pin panel always uses that type. An empty amount takes the part of the line not yet pinned anywhere, so a line can be split across several projects.
-- Amounts are net, in the invoice currency, and signed: the "before correction" row of a credit note is negative. They are converted to PLN with the rate the sync used for the line (invoice or NBP). An entry without a rate or in another currency is left out of the margin and gets a note.
-- Revenue and cost are the sums of PLN amounts by type, margin = revenue − cost, margin % = margin / revenue (empty at zero revenue). The `project-entry-changed` trigger recomputes them from scratch on every change, together with the line's "Przypisanie do usługi" status and the over-allocation check.
-- The "Przypnij pozycje faktur" panel (on the project entry list and on a project) pins several lines at once. It searches by invoice number, KSeF number, counterparty or line name and rejects amounts above a line's unallocated rest.
-- Twenty cannot reject a save synchronously, so `project-changed` reverts a client set to both a company and a person right after saving and explains it in "Uwagi". A project without a client gets the note "Brak klienta".
+Projekty refers to `ksefInvoice`, `ksefInvoiceLine` and `employee` by their universal identifiers and field names, so keep them stable. Install this app before Projekty.
 
 ## Configuration
 

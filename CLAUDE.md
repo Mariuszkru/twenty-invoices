@@ -2,7 +2,7 @@
 
 ## What this is
 
-`ksef-invoices` ("Faktury KSeF") is a Twenty app (twenty-sdk 2.51.1, scaffolded with `twenty app init`). It imports sales and purchase invoices from KSeF API 2.0, with one record per invoice line, so lines can later be allocated to delivered services for real margin. User-facing strings and code comments are in Polish; keep that convention.
+`ksef-invoices` ("Faktury KSeF") is a Twenty app (twenty-sdk 2.51.1, scaffolded with `twenty app init`). It imports sales and purchase invoices from KSeF API 2.0, with one record per invoice line, matches bank payments to them and sends invoice notifications. It deals only with invoices: projects and margin live in the separate Projekty app (`twenty-projects`, repo `../twenty-projects`), split out in 0.15.0. Do not add project features here. User-facing strings and code comments are in Polish; keep that convention.
 
 ## Commands
 
@@ -19,6 +19,7 @@
 - `src/lib/sync/store.ts`: `InvoiceStore` interface. `twenty-store.ts` implements it with `CoreApiClient({ runAs: 'application' })` (loosely typed until the client is generated). Tests use an in-memory store and the fake KSeF in `src/lib/__tests__/fake-ksef.ts`, so tests never hit real APIs.
 - `src/lib/bank/`: Enable Banking bank statement. `enablebanking-http.ts` (JWT RS256 with `kid` = app ID, 429/5xx retries), `consent.ts` (`POST /auth` + `POST /sessions`, session in the secret variable `ENABLEBANKING_SESSION`), `match.ts` (pure matching, never guesses between candidates), `payment.ts` (invoice payment = sum of `paymentAllocation` records), `allocate.ts` (manual split panel), `run-bank-sync.ts` (daily run, cursors and lock in KV `bank:*`). The callback route `/s/bank/callback` is public and protected by a one-time `state` in KV. Response headers are allow-listed, so it returns an HTML page instead of a redirect. Tests use `src/lib/__tests__/fake-enablebanking.ts`.
 - `marginEffectPln` sign convention: sale +, purchase −, `StanPrzed` line flipped.
+- `twenty-projects` depends on this app, never the other way round. It adds fields to `ksefInvoice`, `ksefInvoiceLine` and `employee`, a view on invoice lines and columns in the "Pozycje sprzedaży" and "Pracownicy" views. It refers to them by the universal identifiers in its `src/constants/ksef-invoices.ts`, and reads `ksefInvoiceLine.name`, `invoiceId`, `direction`, `issueDate`, `netAmount`, `isBeforeCorrection`, `marginEffectPln` and `ksefInvoice.name`, `counterpartyName`, `ksefNumber` by name. Do not change or remove these, or the `DIRECTION` values, without updating `twenty-projects`.
 - Company matching relies on the `company.nip` field from the separate `regon-nip` app. `findCompanyIdsByNip` returns `null` when that field does not exist.
 - Rocket.Chat: every message sent to Rocket.Chat must have link previews disabled (`parseUrls: false` in the webhook payload). Send them only through `createRocketChatSender` in `src/lib/notify/rocketchat.ts`, which sets this flag, and never post to the webhook directly.
 - IDs: every `universalIdentifier` is in `src/constants/ids.ts` (view field/filter IDs are inline in `src/views/`). They are fixed once deployed.

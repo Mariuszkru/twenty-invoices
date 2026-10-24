@@ -4,6 +4,7 @@ import { ID } from 'src/constants/ids';
 
 // Pracownik, którego dotyczą przelewy wynagrodzeń (rodzaj wydatku "Wynagrodzenia"). Osobna lista, bo nie każdy
 // pracownik ma konto w CRM. Nazwa musi odpowiadać odbiorcy przelewu, żeby wynagrodzenie przypisało się samo.
+// Login Rocket.Chat i przypisania do projektów dodaje osobna aplikacja Projekty (twenty-projects).
 export default defineObject({
   universalIdentifier: ID.employeeObject,
   nameSingular: 'employee',
@@ -31,28 +32,6 @@ export default defineObject({
       relationTargetObjectMetadataUniversalIdentifier: ID.bankTxObject,
       relationTargetFieldMetadataUniversalIdentifier: ID.btxEmployee,
       universalSettings: { relationType: RelationType.ONE_TO_MANY },
-    },
-    {
-      universalIdentifier: ID.empRocketChatUsername,
-      type: FieldType.TEXT,
-      name: 'rocketChatUsername',
-      label: 'Login Rocket.Chat',
-      description: 'Nazwa użytkownika w Rocket.Chat (bez @); potrzebna, żeby dodać pracownika do kanałów projektów.',
-      icon: 'IconAt',
-    },
-    {
-      universalIdentifier: ID.empProjectMemberships,
-      name: 'projectMemberships',
-      type: FieldType.RELATION,
-      label: 'Projekty',
-      description: 'Projekty, do których pracownik jest przypisany.',
-      icon: 'IconBriefcase',
-      relationTargetObjectMetadataUniversalIdentifier: ID.memberObject,
-      relationTargetFieldMetadataUniversalIdentifier: ID.memberEmployee,
-      universalSettings: {
-        relationType: RelationType.ONE_TO_MANY,
-        junctionTargetFieldUniversalIdentifier: ID.memberProject,
-      },
     },
   ],
 });

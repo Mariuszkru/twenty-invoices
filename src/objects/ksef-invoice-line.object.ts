@@ -8,16 +8,12 @@ import {
 } from 'twenty-sdk/define';
 
 import { ID } from 'src/constants/ids';
-import {
-  ALLOCATION_STATUS,
-  ALLOCATION_STATUS_OPTIONS,
-  COST_CATEGORY_OPTIONS,
-  DIRECTION_OPTIONS,
-} from 'src/constants/options';
+import { COST_CATEGORY_OPTIONS, DIRECTION_OPTIONS } from 'src/constants/options';
 
 // Pozycja faktury (FaWiersz). Pole `name` (dodawane automatycznie) przechowuje nazwę towaru/usługi (P_7).
 // `marginEffectPln` to podpisany wpływ pozycji na marżę: sprzedaż +, zakup −, wiersz "stan przed korektą" z odwróconym znakiem.
 // Suma tego pola po pozycjach przypisanych do usługi daje jej rzeczywistą marżę netto w PLN.
+// Przypisania do projektów (projectEntries, allocationStatus) dodaje osobna aplikacja Projekty (twenty-projects).
 export default defineObject({
   universalIdentifier: ID.lineObject,
   nameSingular: 'ksefInvoiceLine',
@@ -175,26 +171,6 @@ export default defineObject({
       label: 'Kategoria kosztu',
       icon: 'IconTags',
       options: [...COST_CATEGORY_OPTIONS],
-    },
-    {
-      universalIdentifier: ID.lineAllocationStatus,
-      name: 'allocationStatus',
-      type: FieldType.SELECT,
-      label: 'Przypisanie do usługi',
-      icon: 'IconLink',
-      options: [...ALLOCATION_STATUS_OPTIONS],
-      defaultValue: `'${ALLOCATION_STATUS.UNASSIGNED}'`,
-    },
-    {
-      universalIdentifier: ID.lineProjectEntries,
-      name: 'projectEntries',
-      type: FieldType.RELATION,
-      label: 'Projekty',
-      description: 'Przypisania tej pozycji do projektów; ich suma wyznacza "Przypisanie do usługi".',
-      icon: 'IconBriefcase',
-      relationTargetObjectMetadataUniversalIdentifier: ID.entryObject,
-      relationTargetFieldMetadataUniversalIdentifier: ID.entryLine,
-      universalSettings: { relationType: RelationType.ONE_TO_MANY },
     },
   ],
 });
