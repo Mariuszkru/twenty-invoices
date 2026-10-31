@@ -2,19 +2,19 @@
 
 ## What this is
 
-`ksef-invoices` ("Faktury KSeF") is a Twenty app (twenty-sdk 2.51.1, scaffolded with `twenty app init`). It imports sales and purchase invoices from KSeF API 2.0, with one record per invoice line, matches bank payments to them and sends invoice notifications. It deals only with invoices: projects and margin live in the separate Projekty app (`twenty-projects`, repo `../twenty-projects`), split out in 0.15.0. Do not add project features here. User-facing strings and code comments are in Polish; keep that convention.
+`ksef-invoices` ("Faktury KSeF") is a Twenty app (twenty-sdk 2.54.3, scaffolded with `twenty app init`). It imports sales and purchase invoices from KSeF API 2.0, with one record per invoice line, matches bank payments to them and sends invoice notifications. It deals only with invoices: projects and margin live in the separate Projekty app (`twenty-projects`, repo `../twenty-projects`), split out in 0.15.0. Do not add project features here. User-facing strings and code comments are in Polish; keep that convention.
 
 ## Commands
 
 - `yarn lint`, `yarn typecheck`, `yarn test:unit` (vitest, `src/**/*.test.ts`). Single test: `yarn vitest run --config vitest.unit.config.ts <path> -t "<name>"`
-- Twenty CLI: the global `twenty` command (2.51+). Do not use the deprecated `yarn twenty ...` bundled with twenty-sdk.
+- Twenty CLI: the global `twenty` command (2.54+). Do not use the deprecated `yarn twenty ...` bundled with twenty-sdk.
 - Offline build check: `twenty app build` (uploads nothing). Preview changes: `twenty app plan -r <remote>`. Deploy: `twenty app apply -r <remote> --no-delete`
 - **The CLI's default remote is `recoop-me` (production, https://crm.recoop.pl).** Always pass `-r local` for development. Never run `twenty app dev`/`apply` against production without explicit approval.
 
 ## Architecture
 
 - `src/lib/ksef/`: KSeF client. `http.ts` (429/`Retry-After`, 5xx retries), `auth.ts` (token auth: challenge, RSA-OAEP SHA-256 `token|timestampMs`, poll, redeem), `invoices.ts` (incremental metadata by `PermanentStorage` up to HWM, max 99-day windows, handles `isTruncated`), `fa3-parser.ts` (FA(3) lines).
-- `src/lib/ksef/session.ts`: the refresh token lives in the secret app variable `KSEF_SESSION` (JSON bound to NIP + KSeF token fingerprint), written via `updateOneApplicationVariable` (needs the `APPLICATIONS` role flag). Missing, expired or rejected session falls back to full token auth.
+- `src/lib/ksef/session.ts`: the refresh token lives in the secret app variable `KSEF_SESSION` (JSON bound to NIP + KSeF token fingerprint), written via `updateOneApplicationVariable` (needs the `WORKSPACE_APPS` role flag). Missing, expired or rejected session falls back to full token auth.
 - `src/lib/sync/run-sync.ts`: two-phase sync. Metadata creates `PENDING` headers. XML download is budgeted (`rate-budget.ts`: 60/h, 14/min, kept in KV) and creates lines, then sets `COMPLETE`/`ERROR`. Cursors, lock and last-run summary live in the app KV store (`KV_KEYS`).
 - `src/lib/sync/store.ts`: `InvoiceStore` interface. `twenty-store.ts` implements it with `CoreApiClient({ runAs: 'application' })` (loosely typed until the client is generated). Tests use an in-memory store and the fake KSeF in `src/lib/__tests__/fake-ksef.ts`, so tests never hit real APIs.
 - `src/lib/bank/`: Enable Banking bank statement. `enablebanking-http.ts` (JWT RS256 with `kid` = app ID, 429/5xx retries), `consent.ts` (`POST /auth` + `POST /sessions`, session in the secret variable `ENABLEBANKING_SESSION`), `match.ts` (pure matching, never guesses between candidates), `payment.ts` (invoice payment = sum of `paymentAllocation` records), `allocate.ts` (manual split panel), `run-bank-sync.ts` (daily run, cursors and lock in KV `bank:*`). The callback route `/s/bank/callback` is public and protected by a one-time `state` in KV. Response headers are allow-listed, so it returns an HTML page instead of a redirect. Tests use `src/lib/__tests__/fake-enablebanking.ts`.
