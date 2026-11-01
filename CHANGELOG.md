@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.15.1
+
+- After a KSeF sync that imports new invoices, unmatched bank transactions (up to 60 days back) are matched against them right away, without waiting for the next bank sync and without calling the bank. This covers a payment made before the invoice was issued. The matching logic is shared with the bank sync (`src/lib/bank/rematch.ts`)
+
 ## 0.15.0
 
 - Projects move to the separate Projekty app (`twenty-projects`), so this app deals only with invoices. Removed here: the `project`, `projectEntry` and `projectMember` objects, the "Przypnij pozycje faktur" panel, the project triggers and Rocket.Chat channels, the "Projekty" views and navigation item, and the `projects` fields on companies and people
