@@ -1,6 +1,8 @@
 import { MetadataApiClient } from 'twenty-client-sdk/metadata';
 import { kv } from 'twenty-sdk/logic-function';
 
+import { rematchUnmatched } from 'src/lib/bank/rematch';
+import { createTwentyBankStore } from 'src/lib/bank/twenty-bank-store';
 import { KSEF_BASE_URLS, resolveKsefEnv, type KsefEnv } from 'src/lib/ksef/environments';
 import { createKsefHttpClient } from 'src/lib/ksef/http';
 import { fetchNbpRateBefore } from 'src/lib/nbp';
@@ -32,7 +34,7 @@ export const syncFromEnv = async (budgetMs: number): Promise<SyncSummary | SyncC
   if ('error' in config) {
     return { ok: false, error: 'CONFIG', message: config.error };
   }
-  return runSync({
+  const summary = await runSync({
     http: createKsefHttpClient({ baseUrl: KSEF_BASE_URLS[config.env] }),
     kv: {
       get: (key) => kv.get(key),
@@ -54,4 +56,14 @@ export const syncFromEnv = async (budgetMs: number): Promise<SyncSummary | SyncC
     budgetMs,
     log: (message) => console.log(`[ksef-sync] ${message}`),
   });
+  // płatność mogła wyprzedzić fakturę: nowe faktury próbujemy od razu dopasować do nieprzypisanych transakcji
+  if (summary.created > 0) {
+    try {
+      const { rematched } = await rematchUnmatched(createTwentyBankStore(), Date.now());
+      if (rematched > 0) console.log(`[ksef-sync] dopasowano ${rematched} nieprzypisanych płatności do nowych faktur`);
+    } catch (e) {
+      console.log(`[ksef-sync] ponowne dopasowanie płatności nie powiodło się: ${e instanceof Error ? e.message : e}`);
+    }
+  }
+  return summary;
 };

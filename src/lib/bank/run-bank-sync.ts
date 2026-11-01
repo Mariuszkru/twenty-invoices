@@ -1,23 +1,17 @@
-import { ALLOCATION_ORIGIN, EXPENSE_CATEGORY, MATCH_STATUS, PAYMENT_PURPOSE } from 'src/constants/options';
+import { EXPENSE_CATEGORY, MATCH_STATUS, PAYMENT_PURPOSE } from 'src/constants/options';
 import type { StoredBankSession } from 'src/lib/bank/consent';
 import { isConsentError, type EnableBankingClient } from 'src/lib/bank/enablebanking-http';
 import { classifyExpense, expenseLabel, findEmployeeId } from 'src/lib/bank/expense-category';
-import {
-  AMOUNT_TOLERANCE_MICROS,
-  matchTransaction,
-  remainingMicros,
-  type MatchableTransaction,
-  type MatchResult,
-  type OpenInvoice,
-} from 'src/lib/bank/match';
+import type { MatchableTransaction } from 'src/lib/bank/match';
 import {
   bankErrorMessage,
   bankSummaryMessage,
   consentExpiringMessage,
   noConsentMessage,
 } from 'src/lib/bank/messages';
-import { allocationName, recomputeInvoicePayment } from 'src/lib/bank/payment';
-import type { AllocationRecord, BankStore, Employee, TransactionStatus } from 'src/lib/bank/store';
+import { recomputeInvoicePayment } from 'src/lib/bank/payment';
+import { allocationRecords, createInvoiceMatcher, isoDate, PAID_LOOKBACK_DAYS, REMATCH_DAYS } from 'src/lib/bank/rematch';
+import type { BankStore, Employee, TransactionStatus } from 'src/lib/bank/store';
 import { fetchBookedTransactions, type BankTransactionRecord } from 'src/lib/bank/transactions';
 import { errorMessage } from 'src/lib/sync/import-details';
 import type { KvStore } from 'src/lib/sync/rate-budget';
@@ -31,9 +25,6 @@ const LOCK_TTL_MS = 10 * 60 * 1000;
 export const INITIAL_LOOKBACK_DAYS = 30;
 // banki potrafią zaksięgować transakcję z datą sprzed kilku dni
 const OVERLAP_DAYS = 5;
-const REMATCH_DAYS = 60;
-// zapłacone faktury, do których jeszcze przypinamy transakcje (bez zmiany statusu)
-const PAID_LOOKBACK_DAYS = 120;
 export const CONSENT_WARNING_DAYS = [14, 3];
 
 export const BANK_KV_KEYS = {
@@ -75,8 +66,6 @@ export type BankSyncDeps = {
 };
 
 type LockValue = { until: number };
-
-const isoDate = (ms: number) => new Date(ms).toISOString().slice(0, 10);
 
 export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> => {
   const now = deps.now ?? (() => new Date());
@@ -125,45 +114,11 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
   try {
     await warnAboutConsentExpiry(deps, session, startedAt, notify);
 
-    const openInvoices: OpenInvoice[] = await deps.store.findOpenInvoices();
-    const paidInvoices: OpenInvoice[] = await deps.store.findPaidInvoices(isoDate(startedAt - PAID_LOOKBACK_DAYS * DAY_MS));
-    const touchedInvoices = new Set<string>();
-    // dopasowanie zmniejsza pozostałą kwotę w pamięci, żeby kolejna transakcja w tym samym przebiegu jej nie dublowała
-    const consume = (list: OpenInvoice[], invoiceId: string, amountMicros: number) => {
-      const invoice = list.find((i) => i.id === invoiceId);
-      if (!invoice?.grossAmount) return;
-      invoice.paidAmount = {
-        amountMicros: (invoice.grossAmount.amountMicros - remainingMicros(invoice)) + amountMicros,
-        currencyCode: invoice.grossAmount.currencyCode,
-      };
-      if (remainingMicros(invoice) <= AMOUNT_TOLERANCE_MICROS) list.splice(list.indexOf(invoice), 1);
-    };
-    // najpierw faktury otwarte (zmiana statusu), potem już zapłacone – tylko przypięcie jako ślad zapłaty
-    const findMatch = (t: MatchableTransaction): MatchResult => {
-      const open = matchTransaction(t, openInvoices);
-      if (open.allocations.length) {
-        for (const a of open.allocations) {
-          touchedInvoices.add(a.invoiceId);
-          consume(openInvoices, a.invoiceId, a.amountMicros);
-        }
-        return open;
-      }
-      const paid = matchTransaction(t, paidInvoices);
-      if (paid.allocations.length) {
-        summary.linkedToPaid++;
-        for (const a of paid.allocations) consume(paidInvoices, a.invoiceId, a.amountMicros);
-        return { ...paid, note: `${paid.note}; faktura była już oznaczona jako zapłacona` };
-      }
-      return open;
-    };
-    const allocationRecords = (transactionId: string, t: MatchableTransaction, match: MatchResult): AllocationRecord[] =>
-      match.allocations.map((a) => ({
-        transactionId,
-        invoiceId: a.invoiceId,
-        name: allocationName(a.invoiceName, a.amountMicros, t.amount.currencyCode),
-        amount: { amountMicros: a.amountMicros, currencyCode: t.amount.currencyCode },
-        origin: ALLOCATION_ORIGIN.AUTO,
-      }));
+    const matcher = createInvoiceMatcher(
+      await deps.store.findOpenInvoices(),
+      await deps.store.findPaidInvoices(isoDate(startedAt - PAID_LOOKBACK_DAYS * DAY_MS)),
+    );
+    const { findMatch, touchedInvoices } = matcher;
     // przelew bez faktury: ZUS, podatek albo wynagrodzenie dostaje cel płatności zamiast statusu nieprzypisanej;
     // wynagrodzenie dostaje pracownika, gdy odbiorca jednoznacznie pasuje do listy Pracownicy
     let employees: Employee[] | null = null;
@@ -261,6 +216,7 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
       await recomputeInvoicePayment(deps.store, invoiceId);
     }
     summary.invoicesUpdated = touchedInvoices.size;
+    summary.linkedToPaid = matcher.linkedToPaid();
 
     if (summary.created > 0 || summary.rematched > 0 || summary.categorized > 0) {
       await notify(bankSummaryMessage(summary, deps.notify?.crmUrl ?? null));

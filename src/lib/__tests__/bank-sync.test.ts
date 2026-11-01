@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { StoredBankSession } from 'src/lib/bank/consent';
 import { EnableBankingApiError } from 'src/lib/bank/enablebanking-http';
+import { rematchUnmatched } from 'src/lib/bank/rematch';
 import { BANK_KV_KEYS, runBankSync, type BankSyncDeps } from 'src/lib/bank/run-bank-sync';
 import {
   apiTransaction,
@@ -117,6 +118,22 @@ describe('runBankSync', () => {
     expect(result.rematched).toBe(1);
     expect(memory.transactions[0].matchStatus).toBe('AUTO');
     expect(memory.invoiceIdsOf(memory.transactions[0].id)).toEqual(['late']);
+    expect(invoices[0].paymentStatus).toBe('PAID');
+  });
+
+  it('samo ponowne dopasowanie po pobraniu z KSeF przypisuje płatność, która wyprzedziła fakturę', async () => {
+    const invoices: MemoryInvoice[] = [];
+    const { deps, memory } = setup(
+      { transactions: { 'acc-1': [apiTransaction({ entry_reference: 'r1', amount: '1230.00', remittance_information: ['FV/10/2026/001'] })] } },
+      invoices,
+    );
+    await runBankSync(deps);
+    expect(memory.transactions[0].matchStatus).toBe('UNMATCHED');
+
+    invoices.push(openInvoice({ id: 'late' }));
+    const result = await rematchUnmatched(memory.store, NOW.getTime());
+    expect(result).toEqual({ rematched: 1, invoicesUpdated: 1 });
+    expect(memory.transactions[0].matchStatus).toBe('AUTO');
     expect(invoices[0].paymentStatus).toBe('PAID');
   });
 
