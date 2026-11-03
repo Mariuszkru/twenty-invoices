@@ -2,6 +2,11 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.15.3
+
+- Bank matching: credit notes (negative gross) whose numbers appear in the transfer title next to an invoice count towards a collective transfer, so a payment of "invoice minus its corrections" settles all of them instead of being booked as a partial payment of the invoice. A credit note alone never receives a transfer
+- The app role may destroy `paymentAllocation` records, so changing an automatic allocation in the "Rozlicz przelew" panel no longer fails with "Entity performing the request does not have permission"
+
 ## 0.15.2
 
 - Built with `twenty-sdk` and `twenty-client-sdk` 2.55.0 (and the `twenty` CLI 2.55.0). No behavior changes: none of the 2.55.0 breaking changes (webhook `roleId`, removed metadata `readability`/`writability`/`sharingReach`, `setRecordPrivate`, `IconsProvider` path, `allowedIframeOrigins` rename) affect this app
