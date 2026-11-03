@@ -7,6 +7,9 @@ export const ID = {
   allocObject: '754d8bad-39ad-45cd-bc66-69d61badbfc1',
   employeeObject: '37b300c7-0729-4b0d-aeff-2d086c259284',
 
+  // uprawnienie roli aplikacji: trwałe usuwanie rozliczeń przy ręcznej zmianie w panelu "Rozlicz przelew"
+  rolePermAllocDestroy: '3b230bfd-776f-4901-924a-23b75bfc54fe',
+
   invKsefNumber: 'ad20e42e-5477-4d2d-85de-1e5cf1f0996b',
   invDirection: '1d290559-c203-4f98-a53d-688832e266b6',
   invType: '68fda2b2-34ef-458d-a4d0-5157a6c07a1d',

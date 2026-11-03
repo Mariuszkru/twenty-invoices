@@ -111,26 +111,34 @@ const namesMatch = (a: string | null, b: string | null) => {
 
 const formatAmount = (micros: number) => (micros / 1_000_000).toFixed(2);
 
+// korekta in minus: ujemne brutto, pomniejsza przelew zbiorczy, nigdy nie jest opłacana sama
+const isCorrection = (invoice: OpenInvoice) => (invoice.grossAmount?.amountMicros ?? 0) < 0;
+
 export const matchTransaction = (tx: MatchableTransaction, invoices: OpenInvoice[]): MatchResult => {
   const direction = tx.direction === BANK_DIRECTION.CREDIT ? DIRECTION.SALE : DIRECTION.PURCHASE;
-  const candidates = invoices.filter(
-    (i) =>
-      i.direction === direction &&
-      i.grossAmount?.currencyCode === tx.amount.currencyCode &&
-      (i.grossAmount?.amountMicros ?? 0) > 0 &&
-      remainingMicros(i) > AMOUNT_TOLERANCE_MICROS,
+  const sameKind = invoices.filter(
+    (i) => i.direction === direction && i.grossAmount?.currencyCode === tx.amount.currencyCode,
   );
+  const candidates = sameKind.filter(
+    (i) => (i.grossAmount?.amountMicros ?? 0) > 0 && remainingMicros(i) > AMOUNT_TOLERANCE_MICROS,
+  );
+  // nierozliczone korekty in minus biorą udział tylko w przelewie zbiorczym z ich numerem w tytule
+  const corrections = sameKind.filter((i) => isCorrection(i) && remainingMicros(i) < -AMOUNT_TOLERANCE_MICROS);
   const amountFits = (i: OpenInvoice) => Math.abs(remainingMicros(i) - tx.amount.amountMicros) < AMOUNT_TOLERANCE_MICROS;
 
   // 1) numer faktury, numer KSeF albo IPKSeF w tytule
   const title = tx.remittanceInformation ?? '';
-  const byNumber = title
-    ? candidates.flatMap((i) => {
-        const reason = titleMentions(title, i);
-        return reason ? [{ invoice: i, reason }] : [];
-      })
-    : [];
-  const numberHit = byNumber.length > 1 ? byNumber.filter((h) => amountFits(h.invoice)) : byNumber;
+  const mentioned = (list: OpenInvoice[]) =>
+    title
+      ? list.flatMap((i) => {
+          const reason = titleMentions(title, i);
+          return reason ? [{ invoice: i, reason }] : [];
+        })
+      : [];
+  const invoiceHits = mentioned(candidates);
+  // korekty liczą się tylko obok co najmniej jednej faktury z tytułu
+  const byNumber = invoiceHits.length ? [...invoiceHits, ...mentioned(corrections)] : [];
+  const numberHit = byNumber.length > 1 ? invoiceHits.filter((h) => amountFits(h.invoice)) : invoiceHits;
   if (numberHit.length === 1) {
     const { invoice, reason } = numberHit[0];
     const remaining = remainingMicros(invoice);

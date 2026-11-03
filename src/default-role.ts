@@ -1,5 +1,6 @@
 import { defineApplicationRole, SystemPermissionFlag } from 'twenty-sdk/define';
 
+import { ID } from 'src/constants/ids';
 import {
   APP_DISPLAY_NAME,
   DEFAULT_ROLE_UNIVERSAL_IDENTIFIER,
@@ -14,6 +15,18 @@ export default defineApplicationRole({
   canUpdateAllObjectRecords: true,
   canSoftDeleteAllObjectRecords: true,
   canDestroyAllObjectRecords: false,
+  // wyjątek: panel "Rozlicz przelew" zastępuje rozliczenia transakcji (destroyPaymentAllocations).
+  // Bez tego zmiana rozliczenia automatycznego kończy się błędem "does not have permission".
+  objectPermissions: [
+    {
+      universalIdentifier: ID.rolePermAllocDestroy,
+      objectUniversalIdentifier: ID.allocObject,
+      canReadObjectRecords: true,
+      canUpdateObjectRecords: true,
+      canSoftDeleteObjectRecords: true,
+      canDestroyObjectRecords: true,
+    },
+  ],
   // UPLOAD_FILE: zapis oryginalnego XML faktury do pola FILES (MetadataApiClient.uploadFile)
   // WORKSPACE_APPS: zapis sesji KSeF do własnej zmiennej KSEF_SESSION (updateOneApplicationVariable)
   permissionFlagUniversalIdentifiers: [SystemPermissionFlag.UPLOAD_FILE, SystemPermissionFlag.WORKSPACE_APPS],

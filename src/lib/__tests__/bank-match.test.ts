@@ -123,6 +123,37 @@ describe('matchTransaction', () => {
     });
   });
 
+  it('przelew zbiorczy z korektami in minus: faktura pomniejszona o korekty z tytułu', () => {
+    const invoices = [
+      openInvoice({ id: 'fs', name: '(S)FS-2718/26/OSTR', direction: 'PURCHASE', grossAmount: PLN(583.17) }),
+      openInvoice({ id: 'k1', name: '(S)FSK-2724/26/OSTR', direction: 'PURCHASE', grossAmount: PLN(-57.91) }),
+      openInvoice({ id: 'k2', name: '(S)FSK-2723/26/OSTR', direction: 'PURCHASE', grossAmount: PLN(-120.58) }),
+    ];
+    const result = matchTransaction(
+      tx({
+        direction: 'DEBIT',
+        amount: PLN(404.68),
+        remittanceInformation: '(S)FS-2718/26/OSTR,(S)FSK-2724/26/OSTR,(S)FSK-2723/26/OSTR TRANSFER',
+      }),
+      invoices,
+    );
+    expect(result.allocations.map((a) => [a.invoiceId, a.amountMicros])).toEqual([
+      ['fs', PLN(583.17).amountMicros],
+      ['k1', PLN(-57.91).amountMicros],
+      ['k2', PLN(-120.58).amountMicros],
+    ]);
+    expect(result.note).toContain('Przelew zbiorczy');
+  });
+
+  it('sama korekta in minus w tytule nie dostaje przelewu', () => {
+    const invoices = [openInvoice({ id: 'k1', name: '(S)FSK-2724/26/OSTR', direction: 'PURCHASE', grossAmount: PLN(-57.91) })];
+    const result = matchTransaction(
+      tx({ direction: 'DEBIT', amount: PLN(57.91), remittanceInformation: '(S)FSK-2724/26/OSTR' }),
+      invoices,
+    );
+    expect(result.allocations).toEqual([]);
+  });
+
   it('kilka numerów w tytule z sumą różną od przelewu zostaje nieprzypisane', () => {
     const invoices = [openInvoice({ id: 'a', name: 'FV/1/2026' }), openInvoice({ id: 'b', name: 'FV/2/2026' })];
     const result = matchTransaction(tx({ amount: PLN(1000), remittanceInformation: 'FV/1/2026 FV/2/2026' }), invoices);
