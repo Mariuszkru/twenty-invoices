@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.15.2
+
+- Built with `twenty-sdk` and `twenty-client-sdk` 2.55.0 (and the `twenty` CLI 2.55.0). No behavior changes: none of the 2.55.0 breaking changes (webhook `roleId`, removed metadata `readability`/`writability`/`sharingReach`, `setRecordPrivate`, `IconsProvider` path, `allowedIframeOrigins` rename) affect this app
+
 ## 0.15.1
 
 - After a KSeF sync that imports new invoices, unmatched bank transactions (up to 60 days back) are matched against them right away, without waiting for the next bank sync and without calling the bank. This covers a payment made before the invoice was issued. The matching logic is shared with the bank sync (`src/lib/bank/rematch.ts`)
