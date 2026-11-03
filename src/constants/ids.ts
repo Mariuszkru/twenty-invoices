@@ -125,6 +125,7 @@ export const ID = {
   fnBankAllocContext: '5d369919-9948-4c0d-a28b-670944f68d55',
   fnBankAllocate: '5c295f93-3cbe-49ab-b161-ac6144a2b914',
   fnAllocChanged: '14934d8c-48b2-4c76-998d-f163ae1e8db6',
+  fnBankRematch: 'f23de881-f738-40df-8f19-c83f43d086c8',
 
   fcSyncCommand: 'a00503de-99a0-408b-993d-bd1725886bff',
   cmdSync: 'bd29b4c2-6dfa-4c5b-b7d2-ecd9d46f783a',
@@ -134,6 +135,8 @@ export const ID = {
   cmdBankConnect: '04485172-16a4-49ed-bf42-62a84b64f4d0',
   fcBankAllocate: 'f6c5c670-047c-4f88-9679-24e79bfda7db',
   cmdBankAllocate: '232c96f9-85c5-4deb-b749-9324a0914415',
+  fcBankRematch: '1a384c83-601a-4e06-adc7-2966f80531f6',
+  cmdBankRematch: '20b5db95-e8ef-4088-9390-1a75ea2a0e08',
 
   viewSales: '77628d2c-df5b-41ff-960e-a6ae91d3f177',
   viewPurchases: 'e05d113d-d2a6-40ef-97ff-e30269f23cc1',
