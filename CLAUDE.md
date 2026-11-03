@@ -2,13 +2,13 @@
 
 ## What this is
 
-`ksef-invoices` ("Faktury KSeF") is a Twenty app (twenty-sdk 2.54.3, scaffolded with `twenty app init`). It imports sales and purchase invoices from KSeF API 2.0, with one record per invoice line, matches bank payments to them and sends invoice notifications. It deals only with invoices: projects and margin live in the separate Projekty app (`twenty-projects`, repo `../twenty-projects`), split out in 0.15.0. Do not add project features here. User-facing strings and code comments are in Polish; keep that convention.
+`ksef-invoices` ("Faktury KSeF") is a Twenty app (twenty-sdk 2.55.0, scaffolded with `twenty app init`). It imports sales and purchase invoices from KSeF API 2.0, with one record per invoice line, matches bank payments to them and sends invoice notifications. It deals only with invoices: projects and margin live in the separate Projekty app (`twenty-projects`, repo `../twenty-projects`), split out in 0.15.0. Do not add project features here. User-facing strings and code comments are in Polish; keep that convention.
 
 ## Commands
 
 - `yarn lint`, `yarn typecheck`, `yarn test:unit` (vitest, `src/**/*.test.ts`). Single test: `yarn vitest run --config vitest.unit.config.ts <path> -t "<name>"`
 - Twenty CLI: the global `twenty` command (2.54+). Do not use the deprecated `yarn twenty ...` bundled with twenty-sdk.
-- Offline build check: `twenty app build` (uploads nothing). Preview changes: `twenty app plan -r <remote>`. Deploy: `twenty app apply -r <remote> --no-delete`
+- Offline build check: `twenty app build` (uploads nothing). Preview changes: `twenty app plan -r <remote>`. Deploy: `twenty app apply -r <remote> --no-prune` (`--no-delete` is the deprecated alias)
 - **The CLI's default remote is `recoop-me` (production, https://crm.recoop.pl).** Always pass `-r local` for development. Never run `twenty app dev`/`apply` against production without explicit approval.
 
 ## Architecture
