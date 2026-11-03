@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.16.0
+
+- "Dopasuj automatycznie" button (pinned on the bank transaction list) reruns automatic matching for unmatched transactions from the last 60 days against the invoices already in the CRM, without calling the bank. Automatic and manual allocations are left untouched. It shares the bank sync lock, so it refuses to run while a statement download is in progress
+
 ## 0.15.3
 
 - Bank matching: credit notes (negative gross) whose numbers appear in the transfer title next to an invoice count towards a collective transfer, so a payment of "invoice minus its corrections" settles all of them instead of being booked as a partial payment of the invoice. A credit note alone never receives a transfer
