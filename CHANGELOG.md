@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.17.0
+
+- "Pokaż pozycje" button (pinned on the invoice list and the invoice record page) opens the invoice lines filtered to the selected invoices. It is hidden when nothing is selected or when "select all" is used
+
 ## 0.16.0
 
 - "Dopasuj automatycznie" button (pinned on the bank transaction list) reruns automatic matching for unmatched transactions from the last 60 days against the invoices already in the CRM, without calling the bank. Automatic and manual allocations are left untouched. It shares the bank sync lock, so it refuses to run while a statement download is in progress
