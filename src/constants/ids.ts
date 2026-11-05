@@ -137,6 +137,8 @@ export const ID = {
   cmdBankAllocate: '232c96f9-85c5-4deb-b749-9324a0914415',
   fcBankRematch: '1a384c83-601a-4e06-adc7-2966f80531f6',
   cmdBankRematch: '20b5db95-e8ef-4088-9390-1a75ea2a0e08',
+  fcShowInvoiceLines: 'ed467a36-539a-45f5-94a6-646cc693b66f',
+  cmdShowInvoiceLines: '8796b7d0-07fb-4d97-92ed-3765d9a28d95',
 
   viewSales: '77628d2c-df5b-41ff-960e-a6ae91d3f177',
   viewPurchases: 'e05d113d-d2a6-40ef-97ff-e30269f23cc1',
