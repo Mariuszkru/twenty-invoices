@@ -2,6 +2,10 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.17.2
+
+- Fixed: reconnecting the bank duplicated every transaction of the last 30 days. Enable Banking gives the account a new `uid` with each consent, and both the deduplication key (`externalId`) and the download cursor were built from it. They now use the account IBAN (the `uid` only when the bank gives no IBAN). Transactions stored before this version keep the old `uid:reference` key and must be rewritten to `IBAN:reference` once, otherwise the first download after the upgrade duplicates them
+
 ## 0.17.1
 
 - Built with `twenty-sdk` and `twenty-client-sdk` 2.58.0 (and the `twenty` CLI 2.58.0). No behavior changes: none of the breaking changes since 2.55.0 (`workflow`/`workflowAutomatedTrigger` removed from `STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS`) affect this app. `databaseEventTriggerSettings` is deprecated in 2.58.0 and still used by two logic functions
