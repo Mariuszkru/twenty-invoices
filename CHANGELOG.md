@@ -2,6 +2,11 @@
 
 All notable changes to this application are documented in this file.
 
+## 0.17.1
+
+- Built with `twenty-sdk` and `twenty-client-sdk` 2.58.0 (and the `twenty` CLI 2.58.0). No behavior changes: none of the breaking changes since 2.55.0 (`workflow`/`workflowAutomatedTrigger` removed from `STANDARD_OBJECT_UNIVERSAL_IDENTIFIERS`) affect this app. `databaseEventTriggerSettings` is deprecated in 2.58.0 and still used by two logic functions
+- New variable `ENABLEBANKING_PSU_TYPE` (`business` by default, or `personal`) chooses which online banking the "connect bank" link opens. Set `personal` for a company account that the bank serves in its retail banking. Before, the link always asked for business banking when the bank offered it. A type the bank does not offer is now reported as a configuration error instead of silently falling back
+
 ## 0.17.0
 
 - "Pokaż pozycje" button (pinned on the invoice list and the invoice record page) opens the invoice lines filtered to the selected invoices. It is hidden when nothing is selected or when "select all" is used
