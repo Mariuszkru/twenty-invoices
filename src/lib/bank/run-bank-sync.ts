@@ -12,7 +12,7 @@ import {
 import { recomputeInvoicePayment } from 'src/lib/bank/payment';
 import { allocationRecords, createInvoiceMatcher, isoDate, PAID_LOOKBACK_DAYS, REMATCH_DAYS } from 'src/lib/bank/rematch';
 import type { BankStore, Employee, TransactionStatus } from 'src/lib/bank/store';
-import { fetchBookedTransactions, type BankTransactionRecord } from 'src/lib/bank/transactions';
+import { accountKey, fetchBookedTransactions, type BankTransactionRecord } from 'src/lib/bank/transactions';
 import { errorMessage } from 'src/lib/sync/import-details';
 import type { KvStore } from 'src/lib/sync/rate-budget';
 
@@ -34,7 +34,8 @@ export const BANK_KV_KEYS = {
   // ostatni obsłużony termin harmonogramu ("YYYY-MM-DD HH:MM") i data ręcznego pobrania (czas polski)
   lastSlot: 'bank:last-slot',
   manualDate: 'bank:manual-date',
-  cursor: (accountUid: string) => `bank:cursor:${accountUid}`,
+  // klucz rachunku z accountKey (IBAN), nie `uid` sesji
+  cursor: (key: string) => `bank:cursor:${key}`,
   consentWarned: (days: number) => `bank:consent-warned:${days}`,
 };
 
@@ -140,7 +141,7 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
     const today = isoDate(startedAt);
     const freshUnmatched = new Set<string>();
     for (const account of session.accounts) {
-      const cursor = await deps.kv.get<string>(BANK_KV_KEYS.cursor(account.uid));
+      const cursor = await deps.kv.get<string>(BANK_KV_KEYS.cursor(accountKey(account)));
       const dateFrom = cursor
         ? isoDate(Date.parse(`${cursor}T00:00:00Z`) - OVERLAP_DAYS * DAY_MS)
         : isoDate(startedAt - INITIAL_LOOKBACK_DAYS * DAY_MS);
@@ -180,7 +181,7 @@ export const runBankSync = async (deps: BankSyncDeps): Promise<BankSyncSummary> 
         if (allocations.length) await deps.store.createAllocations(allocations);
       }
       summary.created += records.length;
-      await deps.kv.set(BANK_KV_KEYS.cursor(account.uid), today);
+      await deps.kv.set(BANK_KV_KEYS.cursor(accountKey(account)), today);
       log(`rachunek ${account.iban ?? account.uid}: ${fetched.length} transakcji od ${dateFrom}, nowe ${records.length}`);
     }
 

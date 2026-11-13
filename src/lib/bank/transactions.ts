@@ -47,6 +47,10 @@ const accountNumber = (ref: ApiAccountRef | undefined) =>
 
 const shorten = (text: string, max: number) => (text.length > max ? `${text.slice(0, max - 1)}…` : text);
 
+// Stały klucz rachunku. `uid` z Enable Banking zmienia się przy każdej nowej zgodzie, więc klucz deduplikacji
+// i kursor oparte na nim gubiły się po ponownym połączeniu z bankiem – stąd IBAN, a `uid` tylko gdy bank go nie podał.
+export const accountKey = (account: BankAccount) => account.iban?.replace(/\s/g, '') || account.uid;
+
 export const toTransactionRecord = (t: ApiTransaction, account: BankAccount): BankTransactionRecord => {
   const direction = t.credit_debit_indicator === 'CRDT' ? BANK_DIRECTION.CREDIT : BANK_DIRECTION.DEBIT;
   // przy wpływie kontrahentem jest zleceniodawca (debtor), przy wydatku odbiorca (creditor)
@@ -60,8 +64,8 @@ export const toTransactionRecord = (t: ApiTransaction, account: BankAccount): Ba
 
   // bez entry_reference klucz liczymy z treści; dwa identyczne przelewy tego samego dnia sklejają się w jeden
   const externalId = t.entry_reference
-    ? `${account.uid}:${t.entry_reference}`
-    : `${account.uid}:h:${createHash('sha256')
+    ? `${accountKey(account)}:${t.entry_reference}`
+    : `${accountKey(account)}:h:${createHash('sha256')
         .update([bookingDate, t.credit_debit_indicator, amountMicros, title, counterpartyAccount].join('|'))
         .digest('hex')
         .slice(0, 32)}`;

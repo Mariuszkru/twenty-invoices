@@ -56,7 +56,7 @@ describe('wydatki bez faktury', () => {
     ]);
     await memory.store.createTransactions([
       {
-        externalId: 'acc-1:old',
+        externalId: 'PL61109010140000071219812874:old',
         name: 'Jan – wynagrodzenie',
         bookingDate: '2026-10-07',
         valueDate: '2026-10-07',
@@ -89,8 +89,8 @@ describe('wydatki bez faktury', () => {
     expect(result).toMatchObject({ ok: true, created: 1, unmatched: 0, categorized: 2 });
     // "JAN KOWALSKI" na wyciągu = pracownik "Jan Kowalski"
     expect(memory.transactions.map((t) => [t.externalId, t.matchStatus, t.paymentPurpose, t.employeeId ?? null])).toEqual([
-      ['acc-1:old', 'AUTO', 'SALARY', 'emp-jan'],
-      ['acc-1:zus', 'AUTO', 'ZUS', null],
+      ['PL61109010140000071219812874:old', 'AUTO', 'SALARY', 'emp-jan'],
+      ['PL61109010140000071219812874:zus', 'AUTO', 'ZUS', null],
     ]);
   });
 

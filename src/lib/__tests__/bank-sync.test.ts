@@ -65,8 +65,8 @@ describe('runBankSync', () => {
 
     expect(result).toMatchObject({ ok: true, fetched: 2, created: 2, matched: 1, unmatched: 1, invoicesUpdated: 1 });
     expect(memory.transactions.map((t) => [t.externalId, t.matchStatus, t.paymentPurpose ?? null, memory.invoiceIdsOf(t.id)])).toEqual([
-      ['acc-1:r1', 'AUTO', 'INVOICE', ['inv-1']],
-      ['acc-1:r3', 'UNMATCHED', null, []],
+      ['PL61109010140000071219812874:r1', 'AUTO', 'INVOICE', ['inv-1']],
+      ['PL61109010140000071219812874:r3', 'UNMATCHED', null, []],
     ]);
     expect(memory.allocations[0]).toMatchObject({ name: 'FV/10/2026/001 ← 1230.00 PLN', origin: 'AUTO' });
     expect(memory.invoices[0]).toMatchObject({
@@ -84,10 +84,23 @@ describe('runBankSync', () => {
 
     await runBankSync(deps);
     expect(bank.calls[0].query).toMatchObject({ date_from: '2026-09-18', date_to: '2026-10-18' });
-    expect(kv.get(BANK_KV_KEYS.cursor('acc-1'))).toBe('2026-10-18');
+    expect(kv.get(BANK_KV_KEYS.cursor('PL61109010140000071219812874'))).toBe('2026-10-18');
 
     const second = await runBankSync({ ...deps, now: () => new Date('2026-10-19T05:00:00Z') });
     expect(bank.calls[1].query).toMatchObject({ date_from: '2026-10-13', date_to: '2026-10-19' });
+    expect(second.created).toBe(0);
+    expect(memory.transactions).toHaveLength(1);
+  });
+
+  it('ponowne połączenie z bankiem (nowy uid rachunku, ten sam IBAN) nie duplikuje transakcji', async () => {
+    const transaction = apiTransaction({ entry_reference: 'r1' });
+    const { deps, bank, memory } = setup({ transactions: { 'acc-1': [transaction], 'acc-2': [transaction] } });
+    await runBankSync(deps);
+
+    const reconnected = { ...SESSION, sessionId: 'session-2', accounts: [{ ...SESSION.accounts[0], uid: 'acc-2' }] };
+    const second = await runBankSync({ ...deps, session: reconnected, now: () => new Date('2026-10-19T05:00:00Z') });
+    // kursor przeżywa zmianę uid, więc nie wracamy do pełnych 30 dni
+    expect(bank.calls[1].query).toMatchObject({ date_from: '2026-10-13' });
     expect(second.created).toBe(0);
     expect(memory.transactions).toHaveLength(1);
   });

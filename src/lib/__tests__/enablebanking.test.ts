@@ -205,7 +205,7 @@ describe('toTransactionRecord', () => {
       account,
     );
     expect(record).toMatchObject({
-      externalId: 'acc-1:ref-1',
+      externalId: 'PL61109010140000071219812874:ref-1',
       direction: 'DEBIT',
       amount: { amountMicros: 49_900_000, currencyCode: 'PLN' },
       counterpartyName: 'Dostawca sp. z o.o.',
@@ -219,7 +219,7 @@ describe('toTransactionRecord', () => {
     const a = toTransactionRecord(apiTransaction({ entry_reference: null }), account);
     const b = toTransactionRecord(apiTransaction({ entry_reference: null }), account);
     const c = toTransactionRecord(apiTransaction({ entry_reference: null, amount: '101.00' }), account);
-    expect(a.externalId).toMatch(/^acc-1:h:[0-9a-f]{32}$/);
+    expect(a.externalId).toMatch(/^PL61109010140000071219812874:h:[0-9a-f]{32}$/);
     expect(a.externalId).toBe(b.externalId);
     expect(a.externalId).not.toBe(c.externalId);
   });

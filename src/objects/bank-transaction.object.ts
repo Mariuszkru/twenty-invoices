@@ -24,7 +24,7 @@ export default defineObject({
       name: 'externalId',
       type: FieldType.TEXT,
       label: 'Identyfikator w banku',
-      description: 'Rachunek i entry_reference z banku (albo skrót treści) – klucz deduplikacji kolejnych pobrań.',
+      description: 'IBAN rachunku i entry_reference z banku (albo skrót treści) – klucz deduplikacji kolejnych pobrań.',
       icon: 'IconHash',
     },
     {
