@@ -108,6 +108,7 @@ export const ID = {
   varEbPrivateKey: '8d2812a7-3614-4bf9-bd19-48567722fd74',
   varEbAspsp: '870e8ef7-2ae7-4ae9-ac9d-f7295a0d32c7',
   varEbCountry: '13ebd0bd-d6d4-4d14-afed-12305447cb07',
+  varEbPsuType: '0c42e1cf-5569-4dfc-8767-9bd1c4661516',
   varEbSession: 'a6d55504-e8e6-4e69-8714-4bd5f30bc5df',
   varBankSyncTimes: '43e65296-94e5-45fd-a54e-332b8ed9066b',
 

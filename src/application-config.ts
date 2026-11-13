@@ -86,6 +86,13 @@ export default defineApplication({
       description: 'Dwuliterowy kod kraju banku.',
       value: 'PL',
     },
+    ENABLEBANKING_PSU_TYPE: {
+      universalIdentifier: ID.varEbPsuType,
+      label: 'Enable Banking: rodzaj bankowości',
+      description:
+        'business = logowanie do bankowości firmowej, personal = do indywidualnej (np. konto firmowe JDG obsługiwane w serwisie dla klientów indywidualnych).',
+      value: 'business',
+    },
     BANK_SYNC_TIMES: {
       universalIdentifier: ID.varBankSyncTimes,
       label: 'Enable Banking: godziny pobierania wyciągu',

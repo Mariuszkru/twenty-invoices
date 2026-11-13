@@ -61,6 +61,7 @@ Set these app variables in Twenty:
 | `ENABLEBANKING_PRIVATE_KEY` | Private RSA key (PEM) of the Enable Banking application (secret) |
 | `ENABLEBANKING_ASPSP` | Bank name exactly as Enable Banking lists it |
 | `ENABLEBANKING_COUNTRY` | Bank country, default `PL` |
+| `ENABLEBANKING_PSU_TYPE` | `business` (default) or `personal`: which online banking the bank login link opens. Use `personal` for a company account served by the bank's retail banking |
 | `BANK_SYNC_TIMES` | Statement fetch times, Polish time, comma-separated, at most 3 (default `12:00,15:40,18:00`) |
 | `ENABLEBANKING_SESSION` | Written by the app after the bank authorization (secret). Do not edit |
 

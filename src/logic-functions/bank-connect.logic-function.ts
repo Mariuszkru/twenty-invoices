@@ -37,6 +37,7 @@ export default defineLogicFunction({
         client: bankClientFor(config),
         aspspName: config.aspsp,
         country: config.country,
+        psuType: config.psuType,
         redirectUrl,
         state,
         now: new Date(),

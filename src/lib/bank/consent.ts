@@ -32,6 +32,9 @@ export const parseStoredSession = (value: string | undefined, appId: string): St
   }
 };
 
+export const PSU_TYPES = ['business', 'personal'] as const;
+export type PsuType = (typeof PSU_TYPES)[number];
+
 type Aspsp = {
   name: string;
   country: string;
@@ -61,14 +64,28 @@ type StartParams = {
   redirectUrl: string;
   state: string;
   now: Date;
+  // rodzaj bankowości, do której loguje się użytkownik (ENABLEBANKING_PSU_TYPE)
+  psuType?: PsuType;
 };
 
-export const startAuthorization = async ({ client, aspspName, country, redirectUrl, state, now }: StartParams) => {
+export const startAuthorization = async ({
+  client,
+  aspspName,
+  country,
+  redirectUrl,
+  state,
+  now,
+  psuType = 'business',
+}: StartParams) => {
   const aspsp = await findAspsp(client, aspspName, country);
   // bank może pozwalać na krócej niż 180 dni; minuta zapasu, żeby nie przekroczyć jego limitu
   const seconds = Math.min(MAX_CONSENT_DAYS * DAY_SECONDS, aspsp.maximum_consent_validity ?? 90 * DAY_SECONDS) - 60;
   const validUntil = new Date(now.getTime() + seconds * 1000).toISOString();
-  const psuType = !aspsp.psu_types?.length || aspsp.psu_types.includes('business') ? 'business' : aspsp.psu_types[0];
+  if (aspsp.psu_types?.length && !aspsp.psu_types.includes(psuType)) {
+    throw new BankConfigError(
+      `Bank "${aspsp.name}" nie obsługuje w Enable Banking bankowości "${psuType}" (dostępne: ${aspsp.psu_types.join(', ')}). Zmień zmienną ENABLEBANKING_PSU_TYPE.`,
+    );
+  }
 
   const response = await client.post<{ url: string }>('/auth', {
     access: { valid_until: validUntil },

@@ -1,7 +1,7 @@
 import { MetadataApiClient } from 'twenty-client-sdk/metadata';
 import { kv } from 'twenty-sdk/logic-function';
 
-import { parseStoredSession, type StoredBankSession } from 'src/lib/bank/consent';
+import { PSU_TYPES, parseStoredSession, type PsuType, type StoredBankSession } from 'src/lib/bank/consent';
 import { createEnableBankingClient } from 'src/lib/bank/enablebanking-http';
 import { runBankSync, type BankSyncSummary } from 'src/lib/bank/run-bank-sync';
 import { createTwentyBankStore } from 'src/lib/bank/twenty-bank-store';
@@ -10,7 +10,7 @@ import type { KvStore } from 'src/lib/sync/rate-budget';
 
 // Zależności wyciągów bankowych składane ze zmiennych aplikacji. Bez ENABLEBANKING_APP_ID integracja jest wyłączona.
 
-export type BankConfig = { appId: string; privateKey: string; aspsp: string; country: string };
+export type BankConfig = { appId: string; privateKey: string; aspsp: string; country: string; psuType: PsuType };
 
 export const readBankConfig = (): BankConfig | { error: string } => {
   const appId = process.env.ENABLEBANKING_APP_ID?.trim();
@@ -19,7 +19,11 @@ export const readBankConfig = (): BankConfig | { error: string } => {
   if (!appId) return { error: 'Brak zmiennej ENABLEBANKING_APP_ID (identyfikator aplikacji Enable Banking).' };
   if (!privateKey) return { error: 'Brak zmiennej ENABLEBANKING_PRIVATE_KEY (klucz prywatny PEM).' };
   if (!aspsp) return { error: 'Brak zmiennej ENABLEBANKING_ASPSP (nazwa banku z listy Enable Banking).' };
-  return { appId, privateKey, aspsp, country: process.env.ENABLEBANKING_COUNTRY?.trim().toUpperCase() || 'PL' };
+  const psuType = (process.env.ENABLEBANKING_PSU_TYPE?.trim().toLowerCase() || 'business') as PsuType;
+  if (!PSU_TYPES.includes(psuType)) {
+    return { error: 'Zmienna ENABLEBANKING_PSU_TYPE musi mieć wartość business albo personal.' };
+  }
+  return { appId, privateKey, aspsp, country: process.env.ENABLEBANKING_COUNTRY?.trim().toUpperCase() || 'PL', psuType };
 };
 
 export const bankClientFor = (config: BankConfig) =>

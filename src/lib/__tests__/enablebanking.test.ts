@@ -138,6 +138,37 @@ describe('zgoda', () => {
     });
   });
 
+  it('startAuthorization: konto firmowe w bankowości indywidualnej (psuType personal)', async () => {
+    const { client, calls } = createFakeEnableBanking({ aspsps });
+    await startAuthorization({
+      client,
+      aspspName: 'mBank',
+      country: 'PL',
+      redirectUrl: 'https://crm.example/s/bank/callback',
+      state: 'state-1',
+      now: NOW,
+      psuType: 'personal',
+    });
+    expect(calls[1].body).toMatchObject({ psu_type: 'personal' });
+  });
+
+  it('startAuthorization: rodzaj bankowości nieobsługiwany przez bank', async () => {
+    const { client } = createFakeEnableBanking({
+      aspsps: [{ name: 'Tylko Firmowy', country: 'PL', psu_types: ['business'] }],
+    });
+    await expect(
+      startAuthorization({
+        client,
+        aspspName: 'Tylko Firmowy',
+        country: 'PL',
+        redirectUrl: 'https://crm.example/s/bank/callback',
+        state: 'state-1',
+        now: NOW,
+        psuType: 'personal',
+      }),
+    ).rejects.toThrow('ENABLEBANKING_PSU_TYPE');
+  });
+
   it('nieznany bank: komunikat z podobnymi nazwami', async () => {
     const { client } = createFakeEnableBanking({ aspsps });
     await expect(findAspsp(client, 'mBank Korporacyjny', 'PL')).rejects.toThrow('Podobne: mBank');
